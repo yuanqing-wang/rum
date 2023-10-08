@@ -45,5 +45,5 @@ class RUMLayer(torch.nn.Module):
         )
         h = h[walks]
         h0 = torch.zeros(1, *h.shape[:-2], self.out_features)
-        y, h = self.rnn(h, h0)
-        return y, h
+        _, h = self.rnn(h, h0)
+        return h.mean(dim=(0, 1))
