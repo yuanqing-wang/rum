@@ -7,7 +7,7 @@ class RUMModel(torch.nn.Module):
             in_features: int,
             out_features: int,
             hidden_features: int,
-            num_layers: int,
+            depth: int,
             **kwargs,
     ):
         super().__init__()
@@ -16,9 +16,9 @@ class RUMModel(torch.nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.hidden_features = hidden_features
-        self.num_layers = num_layers
+        self.depth = depth
         self.layers = torch.nn.ModuleList()
-        for _ in range(num_layers):
+        for _ in range(depth):
             self.layers.append(RUMLayer(hidden_features, hidden_features, **kwargs))
 
     def forward(self, g, h):

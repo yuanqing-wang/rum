@@ -12,10 +12,10 @@ class RUMLayer(torch.nn.Module):
             length: int,
             rnn: torch.nn.Module = GRU,
             random_walk: callable = uniform_random_walk,
-            rnn_kwargs: dict = {},
+            **kwargs
     ):
         super().__init__()
-        self.rnn = rnn(in_features, out_features, **rnn_kwargs)
+        self.rnn = rnn(in_features, out_features, **kwargs)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
