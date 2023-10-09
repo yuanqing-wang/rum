@@ -57,8 +57,9 @@ def run(args):
         depth=args.depth,
         num_samples=args.num_samples,
         length=args.length,
-        dropout=0.5,
+        num_layers=1,
     )
+
     if torch.cuda.is_available():
         model = model.cuda()
         g = g.to("cuda")
@@ -108,11 +109,11 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
     parser.add_argument("--hidden-features", type=int, default=16)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num-samples", type=int, default=8)
-    parser.add_argument("--length", type=int, default=3)
+    parser.add_argument("--num-samples", type=int, default=16)
+    parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=1000)
+    parser.add_argument("--n_epochs", type=int, default=5000)
     args = parser.parse_args()
     run(args)

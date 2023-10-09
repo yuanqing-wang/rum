@@ -1,6 +1,6 @@
 import torch
 import dgl
-from .random_walk import uniform_random_walk
+from .random_walk import uniform_random_walk, uniqueness
 from .rnn import GRU
 
 class RUMLayer(torch.nn.Module):
@@ -15,7 +15,8 @@ class RUMLayer(torch.nn.Module):
             **kwargs
     ):
         super().__init__()
-        self.rnn = rnn(in_features, out_features, **kwargs)
+        out_features = out_features // 2
+        self.rnn = rnn(in_features + length, out_features, **kwargs)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
@@ -43,7 +44,17 @@ class RUMLayer(torch.nn.Module):
             num_samples=self.num_samples, 
             length=self.length,
         )
+        uniqueness_walk = uniqueness(walks)
+        uniqueness_walk = torch.nn.functional.one_hot(
+            uniqueness_walk, num_classes=self.length
+        )
         h = h[walks]
-        h0 = torch.zeros(1, *h.shape[:-2], self.out_features)
-        _, h = self.rnn(h, h0)
-        return h.mean(dim=(0, 1))
+        h = torch.cat([h, uniqueness_walk], dim=-1)
+        h0 = torch.zeros(self.rnn.num_layers, *h.shape[:-2], self.out_features, device=h.device)
+        y, h = self.rnn(h, h0)
+        # y = y[..., -1, :]# .mean(0)
+        # h = h.mean(0)
+        y = y[..., -1, :].mean(0)
+        h = h.mean(dim=(0, 1))
+        h = torch.cat([y, h], dim=-1)
+        return h

@@ -1,4 +1,6 @@
 import dgl
+import torch
+from functools import partial
 
 def uniform_random_walk(g, num_samples, length):
     """
@@ -22,7 +24,26 @@ def uniform_random_walk(g, num_samples, length):
     nodes = nodes.repeat(num_samples)
     walks, _ = dgl.sampling.random_walk(g=g, nodes=nodes, length=length-1)
     walks = walks.view(num_samples, g.number_of_nodes(), length)
+    walks = walks.flip(-1)
     return walks
 
+# @torch.jit.trace(example_inputs=(torch.zeros(10, 10, 10)))
 
+def uniqueness(walk):
+    """
+    Compute the uniqueness of a random walk.
+
+    Parameters
+    ----------
+    walk : Tensor
+        The random walk.
+
+    Returns
+    -------
+    uniqueness : Tensor
+        The uniqueness of the random walk.
+    """
+    walk_equal = walk.unsqueeze(-1) == walk.unsqueeze(-2)
+    walk_equal = (1 * walk_equal).argmax(dim=-1)
+    return walk_equal
 
