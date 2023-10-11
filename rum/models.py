@@ -11,8 +11,8 @@ class RUMModel(torch.nn.Module):
             **kwargs,
     ):
         super().__init__()
-        self.fc_in = torch.nn.Linear(in_features, hidden_features, bias=False)
-        self.fc_out = torch.nn.Linear(hidden_features, out_features, bias=False)
+        self.fc_in = torch.nn.Linear(in_features, hidden_features, bias=True)
+        self.fc_out = torch.nn.Linear(hidden_features, out_features, bias=True)
         self.in_features = in_features
         self.out_features = out_features
         self.hidden_features = hidden_features
@@ -26,6 +26,7 @@ class RUMModel(torch.nn.Module):
         h = self.fc_in(h)
         for layer in self.layers:
             h = layer(g, h)
+            h = h.mean(0)
         h = self.fc_out(h)
         return h
     

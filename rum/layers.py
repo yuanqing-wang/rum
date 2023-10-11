@@ -17,6 +17,7 @@ class RUMLayer(torch.nn.Module):
         super().__init__()
         out_features = out_features // 2
         self.rnn = rnn(in_features + length, out_features, **kwargs)
+        self.fc = torch.nn.Linear(length, length, bias=False)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
@@ -45,16 +46,17 @@ class RUMLayer(torch.nn.Module):
             length=self.length,
         )
         uniqueness_walk = uniqueness(walks)
+        walks, uniqueness_walk = walks.flip(-1), uniqueness_walk.flip(-1)
         uniqueness_walk = torch.nn.functional.one_hot(
             uniqueness_walk, num_classes=self.length
-        )
+        ).float()
         h = h[walks]
+        uniqueness_walk = self.fc(uniqueness_walk)
         h = torch.cat([h, uniqueness_walk], dim=-1)
         h0 = torch.zeros(self.rnn.num_layers, *h.shape[:-2], self.out_features, device=h.device)
         y, h = self.rnn(h, h0)
-        # y = y[..., -1, :]# .mean(0)
-        # h = h.mean(0)
-        y = y[..., -1, :].mean(0)
-        h = h.mean(dim=(0, 1))
+        y = y.mean(-2)
+        h = h.mean(0)
         h = torch.cat([y, h], dim=-1)
+        # h = torch.nn.functional.silu(h)
         return h

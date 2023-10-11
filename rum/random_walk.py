@@ -24,7 +24,6 @@ def uniform_random_walk(g, num_samples, length):
     nodes = nodes.repeat(num_samples)
     walks, _ = dgl.sampling.random_walk(g=g, nodes=nodes, length=length-1)
     walks = walks.view(num_samples, g.number_of_nodes(), length)
-    walks = walks.flip(-1)
     return walks
 
 # @torch.jit.trace(example_inputs=(torch.zeros(10, 10, 10)))
