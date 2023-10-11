@@ -1,7 +1,7 @@
 from functools import partial
 import torch
 
-class GRU(torch.nn.GRUCell):
+class GRU(torch.nn.GRU):
     def __init__(self, *args, **kwargs):
         kwargs["batch_first"] = True
         super().__init__(*args, **kwargs)
@@ -35,7 +35,7 @@ class GRU(torch.nn.GRUCell):
         h_n = h_n.view(self.num_layers, *batch_shape, *h_n.shape[-1:])
         return output, h_n
 
-class LSTM(torch.nn.LSTMCell):
+class LSTM(torch.nn.LSTM):
     def __init__(self, *args, **kwargs):
         kwargs["batch_first"] = True
         super().__init__(*args, **kwargs)
@@ -62,7 +62,10 @@ class LSTM(torch.nn.LSTMCell):
         batch_shape = input.shape[:-2]
         event_shape_input = input.shape[-2:]
         input = input.view(-1, *event_shape_input)
-        output, h_n = super().forward(input)
+        output, (h, c) = super().forward(input)
+        # output = output.view(*batch_shape, *output.shape[-2:])
+        # h_n = h_n.view(self.num_layers, *batch_shape, *h_n.shape[-1:])
         output = output.view(*batch_shape, *output.shape[-2:])
-        h_n = h_n.view(self.num_layers, *batch_shape, *h_n.shape[-1:])
-        return output, h_n
+        h = h.view(self.num_layers, *batch_shape, *h.shape[-1:])
+        c = c.view(self.num_layers, *batch_shape, *c.shape[-1:])
+        return output, (h, c)

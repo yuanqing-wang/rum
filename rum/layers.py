@@ -1,7 +1,7 @@
 import torch
 import dgl
 from .random_walk import uniform_random_walk, uniqueness
-from .rnn import GRU
+from .rnn import GRU, LSTM
 
 class RUMLayer(torch.nn.Module):
     def __init__(
@@ -10,12 +10,12 @@ class RUMLayer(torch.nn.Module):
             out_features: int,
             num_samples: int,
             length: int,
-            rnn: torch.nn.Module = GRU,
+            rnn: torch.nn.Module = LSTM,
             random_walk: callable = uniform_random_walk,
             **kwargs
     ):
         super().__init__()
-        out_features = out_features // 2
+        # out_features = out_features // 3
         self.rnn = rnn(in_features + length, out_features, **kwargs)
         self.fc = torch.nn.Linear(length, length, bias=False)
         self.in_features = in_features
@@ -53,10 +53,8 @@ class RUMLayer(torch.nn.Module):
         h = h[walks]
         uniqueness_walk = self.fc(uniqueness_walk)
         h = torch.cat([h, uniqueness_walk], dim=-1)
-        h0 = torch.zeros(self.rnn.num_layers, *h.shape[:-2], self.out_features, device=h.device)
-        y, h = self.rnn(h, h0)
-        y = y.mean(-2)
-        h = h.mean(0)
-        h = torch.cat([y, h], dim=-1)
-        # h = torch.nn.functional.silu(h)
-        return h
+        # h0 = torch.zeros(self.rnn.num_layers, *h.shape[:-2], self.out_features, device=h.device)
+        # y, h = self.rnn(h, h0)
+        y, (h, c) = self.rnn(h)
+        print(y.shape)
+        return y[..., -1, :]

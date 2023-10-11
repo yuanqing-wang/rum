@@ -105,7 +105,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden-features", type=int, default=32)
+    parser.add_argument("--hidden-features", type=int, default=16)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num-samples", type=int, default=8)
     parser.add_argument("--length", type=int, default=12)
