@@ -77,3 +77,9 @@ class Consistency(torch.nn.Module):
         sharpened_probs = sharpened_probs / sharpened_probs.sum(-1, keepdim=True)
         loss = (sharpened_probs - avg_probs).pow(2).sum(-1).mean()
         return loss
+
+
+class SelfSupervise(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        
