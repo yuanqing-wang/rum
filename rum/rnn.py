@@ -1,7 +1,7 @@
 from functools import partial
 import torch
 
-class GRU(torch.nn.GRUCell):
+class GRU(torch.nn.GRU):
     def __init__(self, *args, **kwargs):
         kwargs["batch_first"] = True
         super().__init__(*args, **kwargs)
@@ -35,7 +35,7 @@ class GRU(torch.nn.GRUCell):
         h_n = h_n.view(self.num_layers, *batch_shape, *h_n.shape[-1:])
         return output, h_n
 
-class LSTM(torch.nn.LSTMCell):
+class LSTM(torch.nn.LSTM):
     def __init__(self, *args, **kwargs):
         kwargs["batch_first"] = True
         super().__init__(*args, **kwargs)

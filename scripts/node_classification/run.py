@@ -49,7 +49,9 @@ def get_graph(data):
 
 def run(args):
     g = get_graph(args.data)
+    from rum.layers import Consistency
     from rum.models import RUMModel
+    consistency = Consistency(temperature=args.temperature)
     model = RUMModel(
         in_features=g.ndata["feat"].shape[-1],
         out_features=g.ndata["label"].max()+1,
@@ -74,32 +76,48 @@ def run(args):
 
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
-        h = model(g, g.ndata["feat"]).softmax(-1)
+        h = model(g, g.ndata["feat"])
+        consistency_loss = consistency(h)
+        h = h.mean(0).log()
+
         loss = torch.nn.NLLLoss()(
             h[g.ndata["train_mask"]], 
             g.ndata["label"][g.ndata["train_mask"]],
         )
+        loss = loss + args.consistency * consistency_loss
         loss.backward()
         optimizer.step()
 
+        acc_vl_max, acc_te_max = 0, 0
         with torch.no_grad():
-            h = model(g, g.ndata["feat"]).softmax(-1)
-            train_acc = (
+            h = model(g, g.ndata["feat"]).mean(0)
+            acc_tr = (
                 h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
-            ).float().mean()
-            val_acc = (
+            ).float().mean().item()
+            acc_vl = (
                 h.argmax(-1)[g.ndata["val_mask"]] == g.ndata["label"][g.ndata["val_mask"]]
-            ).float().mean()
-            test_acc = (
+            ).float().mean().item()
+            acc_te = (
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
-            ).float().mean()
-            print(
-                f"Epoch: {idx+1:03d}, "
-                f"Loss: {loss.item():.4f}, "
-                f"Train Acc: {train_acc:.4f}, "
-                f"Val Acc: {val_acc:.4f}, "
-                f"Test Acc: {test_acc:.4f}"
-            )
+            ).float().mean().item()
+            
+            # print(
+            #     f"Epoch: {idx+1:03d}, "
+            #     f"Loss: {loss.item():.4f}, "
+            #     f"Train Acc: {acc_tr:.4f}, "
+            #     f"Val Acc: {acc_vl:.4f}, "
+            #     f"Test Acc: {acc_te:.4f}"
+            # )
+
+            print(acc_vl)
+
+
+            if acc_vl > acc_vl_max:
+                acc_vl_max = acc_vl
+                acc_te_max = acc_te
+
+    return acc_vl_max, acc_te_max
+        
 
 if __name__ == "__main__":
     import argparse
@@ -107,11 +125,13 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
     parser.add_argument("--hidden-features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num-samples", type=int, default=8)
-    parser.add_argument("--length", type=int, default=12)
+    parser.add_argument("--num-samples", type=int, default=16)
+    parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--weight-decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=10000)
+    parser.add_argument("--temperature", type=float, default=0.1)
+    parser.add_argument("--consistency", type=float, default=1e-2)
     args = parser.parse_args()
     run(args)

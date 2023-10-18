@@ -1,3 +1,4 @@
+from typing import Callable
 import torch
 from .layers import RUMLayer
 
@@ -8,6 +9,7 @@ class RUMModel(torch.nn.Module):
             out_features: int,
             hidden_features: int,
             depth: int,
+            activation: Callable = torch.nn.ELU(),
             **kwargs,
     ):
         super().__init__()
@@ -20,13 +22,15 @@ class RUMModel(torch.nn.Module):
         self.layers = torch.nn.ModuleList()
         for _ in range(depth):
             self.layers.append(RUMLayer(hidden_features, hidden_features, **kwargs))
+        self.activation = activation
 
     def forward(self, g, h):
         g = g.local_var()
         h = self.fc_in(h)
-        for layer in self.layers:
+        for idx, layer in enumerate(self.layers):
+            if idx > 0:
+                h = h.mean(0)
             h = layer(g, h)
-            h = h.mean(0)
-        h = self.fc_out(h)
+        h = self.fc_out(h).softmax(-1)
         return h
     
