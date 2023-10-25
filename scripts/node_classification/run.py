@@ -3,7 +3,7 @@ import torch
 import pyro
 from pyro import poutine
 import dgl
-from ogb.nodeproppred import DglNodePropPredDataset
+# from ogb.nodeproppred import DglNodePropPredDataset
 dgl.use_libxsmm(False)
 
 def get_graph(data):
@@ -49,9 +49,7 @@ def get_graph(data):
 
 def run(args):
     g = get_graph(args.data)
-    from rum.layers import Consistency
     from rum.models import RUMModel
-    consistency = Consistency(temperature=args.temperature)
     model = RUMModel(
         in_features=g.ndata["feat"].shape[-1],
         out_features=g.ndata["label"].max()+1,
@@ -59,6 +57,7 @@ def run(args):
         depth=args.depth,
         num_samples=args.num_samples,
         length=args.length,
+        temperature=args.temperature,
     )
 
     if torch.cuda.is_available():
@@ -76,21 +75,20 @@ def run(args):
 
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
-        h = model(g, g.ndata["feat"])
-        consistency_loss = consistency(h)
+        h, loss = model(g, g.ndata["feat"])
         h = h.mean(0).log()
 
-        loss = torch.nn.NLLLoss()(
+        loss = loss + torch.nn.NLLLoss()(
             h[g.ndata["train_mask"]], 
             g.ndata["label"][g.ndata["train_mask"]],
-        )
-        loss = loss + args.consistency * consistency_loss
+        ) 
         loss.backward()
         optimizer.step()
 
         acc_vl_max, acc_te_max = 0, 0
         with torch.no_grad():
-            h = model(g, g.ndata["feat"]).mean(0)
+            h, _ = model(g, g.ndata["feat"])
+            h = h.mean(0)
             acc_tr = (
                 h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
             ).float().mean().item()

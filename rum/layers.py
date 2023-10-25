@@ -27,6 +27,7 @@ class RUMLayer(torch.nn.Module):
         self.num_samples = num_samples
         self.length = length
         self.dropout = torch.nn.Dropout(dropout)
+        self.self_supervise = SelfSupervise(out_features)
 
     def forward(self, g, h):
         """Forward pass.
@@ -57,14 +58,14 @@ class RUMLayer(torch.nn.Module):
         h = h[walks]
         h0 = torch.zeros(self.rnn_walk.num_layers, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
-
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
+        loss = self.self_supervise(y)
         y = y.mean(-2)
         h = h.mean(0)
         h = torch.cat([y, h], dim=-1)
         h = self.dropout(h)
-        return h
+        return h, loss
 
 class Consistency(torch.nn.Module):
     def __init__(self, temperature):
@@ -80,6 +81,17 @@ class Consistency(torch.nn.Module):
 
 
 class SelfSupervise(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, hidden_features):
         super().__init__()
+        self.fc = torch.nn.Linear(hidden_features, hidden_features)
+        self.loss_fn = torch.nn.MSELoss()
+
+    def forward(self, h):
+        h_dst = h[:, 1:, ...]
+        h_src = h[:, :-1, ...]
+        h_src = self.fc(h_src)
+        loss = self.loss_fn(h_src, h_dst)
+        return loss
+
+
         

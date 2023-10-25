@@ -1,6 +1,6 @@
 from typing import Callable
 import torch
-from .layers import RUMLayer
+from .layers import RUMLayer, Consistency
 
 class RUMModel(torch.nn.Module):
     def __init__(
@@ -10,6 +10,7 @@ class RUMModel(torch.nn.Module):
             hidden_features: int,
             depth: int,
             activation: Callable = torch.nn.ELU(),
+            temperature=0.1,
             **kwargs,
     ):
         super().__init__()
@@ -23,14 +24,19 @@ class RUMModel(torch.nn.Module):
         for _ in range(depth):
             self.layers.append(RUMLayer(hidden_features, hidden_features, **kwargs))
         self.activation = activation
+        self.consistency = Consistency(temperature=temperature)
 
     def forward(self, g, h):
         g = g.local_var()
         h = self.fc_in(h)
+        loss = 0.0
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h = layer(g, h)
+            h, _loss = layer(g, h)
+            loss = loss + _loss
         h = self.fc_out(h).softmax(-1)
-        return h
+        _loss = self.consistency(h)
+        loss = loss + _loss
+        return h, loss
     
