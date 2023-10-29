@@ -11,6 +11,8 @@ class RUMModel(torch.nn.Module):
             depth: int,
             activation: Callable = torch.nn.ELU(),
             temperature=0.1,
+            self_superwise_weight=0.05,
+            consistency_weight=0.01,
             **kwargs,
     ):
         super().__init__()
@@ -25,6 +27,8 @@ class RUMModel(torch.nn.Module):
             self.layers.append(RUMLayer(hidden_features, hidden_features, **kwargs))
         self.activation = activation
         self.consistency = Consistency(temperature=temperature)
+        self.self_superwise_weight = self_superwise_weight
+        self.consistency_weight = consistency_weight
 
     def forward(self, g, h):
         g = g.local_var()
@@ -34,9 +38,11 @@ class RUMModel(torch.nn.Module):
             if idx > 0:
                 h = h.mean(0)
             h, _loss = layer(g, h)
+            _loss = _loss * self.self_superwise_weight
             loss = loss + _loss
         h = self.fc_out(h).softmax(-1)
         _loss = self.consistency(h)
+        _loss = _loss * self.consistency_weight
         loss = loss + _loss
         return h, loss
     

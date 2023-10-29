@@ -30,6 +30,8 @@ def experiment(args):
         "depth": 1,
         "num_samples": 16,
         "n_epochs": 5000,
+        "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
+        "consistency_weight": tune.loguniform(1e-4, 1e-1),
     }
 
     tune_config = tune.TuneConfig(
