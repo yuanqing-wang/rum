@@ -10,13 +10,13 @@ class RUMLayer(torch.nn.Module):
             out_features: int,
             num_samples: int,
             length: int,
-            dropout: float = 0.5,
+            dropout: float = 0.2,
             rnn: torch.nn.Module = GRU,
             random_walk: callable = uniform_random_walk,
             **kwargs
     ):
         super().__init__()
-        out_features = out_features // 2
+        # out_features = out_features // 2
         self.rnn = rnn(in_features + out_features, out_features, **kwargs)
         self.rnn_walk = rnn(length, out_features, **kwargs)
         self.fc = torch.nn.Linear(length, length, bias=False)
@@ -57,13 +57,12 @@ class RUMLayer(torch.nn.Module):
         h = h[walks]
         h0 = torch.zeros(self.rnn_walk.num_layers, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
-
+        h = self.dropout(h)
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
-        y = y.mean(-2)
+        # y = y.mean(-2)
         h = h.mean(0)
-        h = torch.cat([y, h], dim=-1)
-        h = self.dropout(h)
+        # h = torch.cat([y, h], dim=-1)
         return h
 
 class Consistency(torch.nn.Module):
