@@ -45,4 +45,16 @@ class RUMModel(torch.nn.Module):
         _loss = _loss * self.consistency_weight
         loss = loss + _loss
         return h, loss
+
+    def train_self_supervised(self, g, h):
+        g = g.local_var()
+        h0 = h
+        h = self.fc_in(h)
+        loss = 0.0
+        for idx, layer in enumerate(self.layers):
+            if idx > 0:
+                h = h.mean(0)
+            h, _loss = layer.train_self_supervised(g, h, h0)
+            loss = loss + _loss
+        return h, loss
     
