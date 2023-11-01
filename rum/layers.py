@@ -8,6 +8,7 @@ class RUMLayer(torch.nn.Module):
             self,
             in_features: int,
             out_features: int,
+            original_features: int,
             num_samples: int,
             length: int,
             dropout: float = 0.5,
@@ -16,7 +17,7 @@ class RUMLayer(torch.nn.Module):
             **kwargs
     ):
         super().__init__()
-        out_features = out_features // 2
+        # out_features = out_features // 2
         self.rnn = rnn(in_features + out_features, out_features, **kwargs)
         self.rnn_walk = rnn(length, out_features, **kwargs)
         self.fc = torch.nn.Linear(length, length, bias=False)
@@ -27,9 +28,9 @@ class RUMLayer(torch.nn.Module):
         self.num_samples = num_samples
         self.length = length
         self.dropout = torch.nn.Dropout(dropout)
-        self.self_supervise = SelfSupervise(out_features)
+        self.self_supervise = SelfSupervise(in_features, original_features, self.rnn)
 
-    def forward(self, g, h):
+    def forward(self, g, h, y0):
         """Forward pass.
 
         Parameters
@@ -56,16 +57,36 @@ class RUMLayer(torch.nn.Module):
             uniqueness_walk, num_classes=self.length
         ).float()
         h = h[walks]
+        h = self.dropout(h)
         h0 = torch.zeros(self.rnn_walk.num_layers, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
+        loss, _ = self.self_supervise(h, y0[walks], h_walk, y_walk)
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
-        loss = self.self_supervise(y)
-        y = y.mean(-2)
+        # y = y.mean(-2)
         h = h.mean(0)
-        h = torch.cat([y, h], dim=-1)
-        h = self.dropout(h)
+        # h = torch.cat([y, h], dim=-1)
+        # h = self.dropout(h)
         return h, loss
+    
+    def train_self_supervised(self, g, h, y0):
+        walks = self.random_walk(
+            g=g, 
+            num_samples=self.num_samples, 
+            length=self.length,
+        )
+        uniqueness_walk = uniqueness(walks)
+        walks, uniqueness_walk = walks.flip(-1), uniqueness_walk.flip(-1)
+        uniqueness_walk = torch.nn.functional.one_hot(
+            uniqueness_walk, num_classes=self.length
+        ).float()
+        h = h[walks]
+        h = self.dropout(h)
+        h0 = torch.zeros(self.rnn_walk.num_layers, *h.shape[:-2], self.out_features, device=h.device)
+        y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
+        loss = self.self_supervise(h, y0[walks], h_walk, y_walk)
+
+    
 
 class Consistency(torch.nn.Module):
     def __init__(self, temperature):
@@ -79,19 +100,20 @@ class Consistency(torch.nn.Module):
         loss = (sharpened_probs - avg_probs).pow(2).sum(-1).mean()
         return loss
 
-
 class SelfSupervise(torch.nn.Module):
-    def __init__(self, hidden_features):
+    def __init__(self, in_features, out_features, rnn):
         super().__init__()
-        self.fc = torch.nn.Linear(hidden_features, hidden_features)
-        self.loss_fn = torch.nn.MSELoss()
+        self.rnn = rnn
+        self.fc = torch.nn.Linear(in_features, out_features)
+        self.loss_fn = torch.nn.L1Loss()
 
-    def forward(self, h):
-        h_dst = h[:, 1:, ...]
-        h_src = h[:, :-1, ...]
-        h_src = self.fc(h_src)
-        loss = self.loss_fn(h_src, h_dst)
-        return loss
+    def forward(self, h, y, h_walk, y_walk):
+        h = torch.cat([h, y_walk], dim=-1)
+        h = h[:, :, :-1, ...].contiguous()
+        y = y[:, :, 1:, ...].contiguous()
+        y_hat, h = self.rnn(h, h_walk)
+        y_hat = self.fc(y_hat)
+        loss = self.loss_fn(y_hat, y)
+        return loss, h
 
 
-        

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Self
 import torch
 from .layers import RUMLayer, Consistency
 
@@ -24,7 +24,7 @@ class RUMModel(torch.nn.Module):
         self.depth = depth
         self.layers = torch.nn.ModuleList()
         for _ in range(depth):
-            self.layers.append(RUMLayer(hidden_features, hidden_features, **kwargs))
+            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, **kwargs))
         self.activation = activation
         self.consistency = Consistency(temperature=temperature)
         self.self_superwise_weight = self_superwise_weight
@@ -32,14 +32,14 @@ class RUMModel(torch.nn.Module):
 
     def forward(self, g, h):
         g = g.local_var()
+        h0 = h
         h = self.fc_in(h)
         loss = 0.0
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h, _loss = layer(g, h)
-            _loss = _loss * self.self_superwise_weight
-            loss = loss + _loss
+            h, _loss = layer(g, h, h0)
+            loss = loss + self.self_superwise_weight * _loss
         h = self.fc_out(h).softmax(-1)
         _loss = self.consistency(h)
         _loss = _loss * self.consistency_weight

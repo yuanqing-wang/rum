@@ -108,8 +108,6 @@ def run(args):
                 f"Test Acc: {acc_te:.4f}"
             )
 
-
-
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
@@ -121,17 +119,17 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden-features", type=int, default=32)
-    parser.add_argument("--depth", type=int, default=2)
-    parser.add_argument("--num-samples", type=int, default=16)
+    parser.add_argument("--hidden-features", type=int, default=16)
+    parser.add_argument("--depth", type=int, default=1)
+    parser.add_argument("--num-samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--lr", type=float, default=1e-2)
+    parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=10000)
     parser.add_argument("--temperature", type=float, default=0.1)
     parser.add_argument("--consistency", type=float, default=1e-2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1)
+    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--consistency_weight", type=float, default=0.01)
     parser.add_argument("--dropout", type=float, default=0.5)
     args = parser.parse_args()
