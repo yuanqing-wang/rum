@@ -113,6 +113,7 @@ class SelfSupervise(torch.nn.Module):
         y_hat, h = self.rnn(h, h_walk)
         y_hat = self.fc(y_hat)
         loss = self.loss_fn(y_hat, y)
+        print(loss)
         return h, loss 
 
 

@@ -81,7 +81,6 @@ def run(args):
             g, 
             g.ndata["feat"],
         )
-        print(loss)
         loss.backward()
         optimizer.step()
 
