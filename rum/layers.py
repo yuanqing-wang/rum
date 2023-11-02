@@ -13,6 +13,7 @@ class RUMLayer(torch.nn.Module):
             dropout: float = 0.2,
             rnn: torch.nn.Module = GRU,
             random_walk: callable = uniform_random_walk,
+            activation: callable = torch.nn.ReLU(),
             **kwargs
     ):
         super().__init__()
@@ -27,6 +28,7 @@ class RUMLayer(torch.nn.Module):
         self.num_samples = num_samples
         self.length = length
         self.dropout = torch.nn.Dropout(dropout)
+        self.activation = activation
 
     def forward(self, g, h):
         """Forward pass.
@@ -61,6 +63,7 @@ class RUMLayer(torch.nn.Module):
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
         # y = y.mean(-2)
+        h = self.activation(h)
         h = h.mean(0)
         # h = torch.cat([y, h], dim=-1)
         return h

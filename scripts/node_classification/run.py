@@ -121,7 +121,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden-features", type=int, default=32)
+    parser.add_argument("--hidden-features", type=int, default=128)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num-samples", type=int, default=32)
     parser.add_argument("--length", type=int, default=8)
@@ -131,7 +131,6 @@ if __name__ == "__main__":
     parser.add_argument("--n_epochs", type=int, default=10000)
     parser.add_argument("--temperature", type=float, default=0.1)
     parser.add_argument("--consistency", type=float, default=1e-2)
-    parser.add_argument("--dropout", type=float, default=0.5)
-    parser.add_argument("--")
+    parser.add_argument("--dropout", type=float, default=0.2)
     args = parser.parse_args()
     run(args)
