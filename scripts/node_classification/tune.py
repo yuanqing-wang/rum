@@ -19,7 +19,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
     param_space = {
         "data": args.data,
-        "hidden_features": tune.qrandint(8, 32, 2),
+        "hidden_features": tune.qrandint(8, 128),
         "learning_rate": tune.loguniform(1e-4, 1e-1),
         "weight_decay": tune.loguniform(1e-6, 1e-3),
         "length": tune.randint(4, 16),
@@ -30,7 +30,7 @@ def experiment(args):
         "optimizer": "Adam",
         "depth": 1,
         "num_samples": 16,
-        "n_epochs": 5000,
+        "n_epochs": 1000,
     }
 
     tune_config = tune.TuneConfig(
