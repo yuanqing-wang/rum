@@ -59,6 +59,9 @@ def run(args):
         length=args.length,
         temperature=args.temperature,
         dropout=args.dropout,
+        num_layers=1,
+        self_supervise_weight=args.self_supervise_weight,
+        consistency_weight=args.consistency_weight,
     )
 
     if torch.cuda.is_available():
@@ -73,16 +76,6 @@ def run(args):
         lr=args.lr,
         weight_decay=args.weight_decay,
     )
-
-    
-    for idx in range(1000):
-        optimizer.zero_grad()
-        _, loss = model.train_self_supervised(
-            g, 
-            g.ndata["feat"],
-        )
-        loss.backward()
-        optimizer.step()
 
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
@@ -129,18 +122,18 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden-features", type=int, default=16)
+    parser.add_argument("--hidden-features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num-samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--weight-decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=10000)
-    parser.add_argument("--temperature", type=float, default=0.1)
-    parser.add_argument("--consistency", type=float, default=1e-2)
+    parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=1.0)
-    parser.add_argument("--consistency_weight", type=float, default=0.01)
+    parser.add_argument("--consistency_weight", type=float, default=0.1)
     parser.add_argument("--dropout", type=float, default=0.5)
+    parser.add_argument("--num_layers", type=int, default=1)
     args = parser.parse_args()
     run(args)

@@ -19,7 +19,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
     param_space = {
         "data": args.data,
-        "hidden_features": tune.qrandint(8, 32, 2),
+        "hidden_features": tune.randint(8, 32),
         "learning_rate": tune.loguniform(1e-4, 1e-1),
         "weight_decay": tune.loguniform(1e-6, 1e-3),
         "length": tune.randint(4, 16),
@@ -28,10 +28,12 @@ def experiment(args):
         "consistency": tune.loguniform(1e-4, 1e-1),
         "optimizer": "Adam",
         "depth": 1,
-        "num_samples": 16,
-        "n_epochs": 5000,
+        "num_layers": tune.randint(1, 3),
+        "num_samples": 4,
+        "n_epochs": 1000,
         "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
         "consistency_weight": tune.loguniform(1e-4, 1e-1),
+        "dropout": tune.uniform(0.0, 1.0),
     }
 
     tune_config = tune.TuneConfig(

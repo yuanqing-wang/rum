@@ -14,6 +14,7 @@ class RUMLayer(torch.nn.Module):
             dropout: float = 0.5,
             rnn: torch.nn.Module = GRU,
             random_walk: callable = uniform_random_walk,
+            activation: callable = torch.nn.Identity(),
             **kwargs
     ):
         super().__init__()
@@ -29,6 +30,7 @@ class RUMLayer(torch.nn.Module):
         self.length = length
         self.dropout = torch.nn.Dropout(dropout)
         self.self_supervise = SelfSupervise(in_features, original_features, self.rnn)
+        self.activation = activation
 
     def forward(self, g, h, y0):
         """Forward pass.
@@ -60,13 +62,17 @@ class RUMLayer(torch.nn.Module):
         h = self.dropout(h)
         h0 = torch.zeros(self.rnn_walk.num_layers, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
-        _, loss = self.self_supervise(h, y0[walks], h_walk, y_walk)
+        if self.training:
+            _, loss = self.self_supervise(h, y0[walks], h_walk, y_walk)
+        else:
+            loss = 0.0
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
         # y = y.mean(-2)
+        h = self.activation(h)
         h = h.mean(0)
         # h = torch.cat([y, h], dim=-1)
-        # h = self.dropout(h)
+        h = self.dropout(h)
         return h, loss
     
     def train_self_supervised(self, g, h, y0):
@@ -81,7 +87,6 @@ class RUMLayer(torch.nn.Module):
             uniqueness_walk, num_classes=self.length
         ).float()
         h = h[walks]
-        h = self.dropout(h)
         h0 = torch.zeros(self.rnn_walk.num_layers, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h, loss = self.self_supervise(h, y0[walks], h_walk, y_walk)
@@ -100,20 +105,19 @@ class Consistency(torch.nn.Module):
         return loss
 
 class SelfSupervise(torch.nn.Module):
-    def __init__(self, in_features, out_features, rnn):
+    def __init__(self, in_features, out_features, rnn, subsample=100):
         super().__init__()
         self.rnn = rnn
         self.fc = torch.nn.Linear(in_features, out_features)
-        self.loss_fn = torch.nn.L1Loss()
+        self.subsample = subsample
 
     def forward(self, h, y, h_walk, y_walk):
         h = torch.cat([h, y_walk], dim=-1)
-        h = h[:, :, :-1, ...].contiguous()
-        y = y[:, :, 1:, ...].contiguous()
+        idxs = torch.randint(high=h.shape[-3], size=(self.subsample, ), device=h.device)
+        h = h[..., idxs, :-1, :].contiguous()
+        y = y[..., idxs, 1:, :].contiguous()
+        h_walk = h_walk[:, :, idxs, :].contiguous()
         y_hat, h = self.rnn(h, h_walk)
         y_hat = self.fc(y_hat)
-        loss = self.loss_fn(y_hat, y)
-        print(loss)
-        return h, loss 
-
-
+        loss = torch.nn.BCEWithLogitsLoss(pos_weight=y.detach().mean().pow(-1))(y_hat, y)
+        return h, loss
