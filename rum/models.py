@@ -1,6 +1,6 @@
-from typing import Callable
+from typing import Callable, Self
 import torch
-from .layers import RUMLayer
+from .layers import RUMLayer, Consistency
 
 class RUMModel(torch.nn.Module):
     def __init__(
@@ -10,6 +10,9 @@ class RUMModel(torch.nn.Module):
             hidden_features: int,
             depth: int,
             activation: Callable = torch.nn.ELU(),
+            temperature=0.1,
+            self_supervise_weight=0.05,
+            consistency_weight=0.01,
             **kwargs,
     ):
         super().__init__()
@@ -21,16 +24,37 @@ class RUMModel(torch.nn.Module):
         self.depth = depth
         self.layers = torch.nn.ModuleList()
         for _ in range(depth):
-            self.layers.append(RUMLayer(hidden_features, hidden_features, **kwargs))
+            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, **kwargs))
         self.activation = activation
+        self.consistency = Consistency(temperature=temperature)
+        self.self_supervise_weight = self_supervise_weight
+        self.consistency_weight = consistency_weight
 
     def forward(self, g, h):
         g = g.local_var()
+        h0 = h
         h = self.fc_in(h)
+        loss = 0.0
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h = layer(g, h)
+            h, _loss = layer(g, h, h0)
+            loss = loss + self.self_supervise_weight * _loss
         h = self.fc_out(h).softmax(-1)
-        return h
+        _loss = self.consistency(h)
+        _loss = _loss * self.consistency_weight
+        loss = loss + _loss
+        return h, loss
+
+    def train_self_supervised(self, g, h):
+        g = g.local_var()
+        h0 = h
+        h = self.fc_in(h)
+        loss = 0.0
+        for idx, layer in enumerate(self.layers):
+            if idx > 0:
+                h = h.mean(0)
+            h, _loss = layer.train_self_supervised(g, h, h0)
+            loss = loss + _loss
+        return h, loss
     
