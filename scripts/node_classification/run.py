@@ -77,6 +77,7 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
+    acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
         h, loss = model(g, g.ndata["feat"])
@@ -89,7 +90,6 @@ def run(args):
         loss.backward()
         optimizer.step()
 
-        acc_vl_max, acc_te_max = 0, 0
         with torch.no_grad():
             h, _ = model(g, g.ndata["feat"])
             h = h.mean(0)
@@ -103,24 +103,25 @@ def run(args):
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
             ).float().mean().item()
             
-            # print(
-            #     f"Epoch: {idx+1:03d}, "
-            #     f"Loss: {loss.item():.4f}, "
-            #     f"Train Acc: {acc_tr:.4f}, "
-            #     f"Val Acc: {acc_vl:.4f}, "
-            #     f"Test Acc: {acc_te:.4f}"
-            # )
+            # if __name__ == "__main__":
+            #     print(
+            #         f"Epoch: {idx+1:03d}, "
+            #         f"Loss: {loss.item():.4f}, "
+            #         f"Train Acc: {acc_tr:.4f}, "
+            #         f"Val Acc: {acc_vl:.4f}, "
+            #         f"Test Acc: {acc_te:.4f}"
+            #     )
 
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
                 if args.checkpoint:
                     torch.save(model, args.checkpoint)
-        print(
-            "ACCURACY,"
-            f"{acc_vl_max:.4f},"
-            f"{acc_te_max:.4f}"
-        )
+    print(
+        "ACCURACY,"
+        f"{acc_vl_max:.4f},"
+        f"{acc_te_max:.4f}"
+    )
 
     return acc_vl_max, acc_te_max
         
