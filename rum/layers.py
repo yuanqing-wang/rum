@@ -11,7 +11,7 @@ class RUMLayer(torch.nn.Module):
             original_features: int,
             num_samples: int,
             length: int,
-            dropout: float = 0.5,
+            dropout: float = 0.2,
             rnn: torch.nn.Module = GRU,
             random_walk: callable = uniform_random_walk,
             activation: callable = torch.nn.Identity(),
@@ -66,6 +66,7 @@ class RUMLayer(torch.nn.Module):
             _, loss = self.self_supervise(h, y0[walks], h_walk, y_walk)
         else:
             loss = 0.0
+
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
         # y = y.mean(-2)
@@ -91,6 +92,7 @@ class RUMLayer(torch.nn.Module):
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h, loss = self.self_supervise(h, y0[walks], h_walk, y_walk)
         return h, loss
+
 
 class Consistency(torch.nn.Module):
     def __init__(self, temperature):

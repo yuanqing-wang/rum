@@ -26,6 +26,7 @@ def experiment(args):
         "lr": tune.loguniform(1e-4, 1e-1),
         "temperature": tune.uniform(0.0, 1.0),
         "consistency": tune.loguniform(1e-4, 1e-1),
+        "dropout": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,
         "num_layers": tune.randint(1, 3),
@@ -34,6 +35,7 @@ def experiment(args):
         "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
         "consistency_weight": tune.loguniform(1e-4, 1e-1),
         "dropout": tune.uniform(0.0, 1.0),
+
     }
 
     tune_config = tune.TuneConfig(
