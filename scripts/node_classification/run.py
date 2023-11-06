@@ -57,7 +57,7 @@ def run(args):
         depth=args.depth,
         num_samples=args.num_samples,
         length=args.length,
-        temperature=args.temperature,
+        temperature=args.consistency_temperature,
         dropout=args.dropout,
         num_layers=1,
         self_supervise_weight=args.self_supervise_weight,
@@ -73,7 +73,7 @@ def run(args):
         args.optimizer,
     )(
         model.parameters(), 
-        lr=args.lr,
+        lr=args.learning_rate,
         weight_decay=args.weight_decay,
     )
 
@@ -103,17 +103,24 @@ def run(args):
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
             ).float().mean().item()
             
-            print(
-                f"Epoch: {idx+1:03d}, "
-                f"Loss: {loss.item():.4f}, "
-                f"Train Acc: {acc_tr:.4f}, "
-                f"Val Acc: {acc_vl:.4f}, "
-                f"Test Acc: {acc_te:.4f}"
-            )
+            # print(
+            #     f"Epoch: {idx+1:03d}, "
+            #     f"Loss: {loss.item():.4f}, "
+            #     f"Train Acc: {acc_tr:.4f}, "
+            #     f"Val Acc: {acc_vl:.4f}, "
+            #     f"Test Acc: {acc_te:.4f}"
+            # )
 
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
+                if args.checkpoint:
+                    torch.save(model, args.checkpoint)
+        print(
+            "ACCURACY,"
+            f"{acc_vl_max:.4f},"
+            f"{acc_te_max:.4f}"
+        )
 
     return acc_vl_max, acc_te_max
         
@@ -122,18 +129,20 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden-features", type=int, default=64)
+    parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num-samples", type=int, default=4)
+    parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--lr", type=float, default=1e-2)
-    parser.add_argument("--weight-decay", type=float, default=1e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-2)
+    parser.add_argument("--weight_decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=10000)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--consistency_weight", type=float, default=0.1)
+    parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
+    parser.add_argument("--checkpoint", type=str, default="")
     args = parser.parse_args()
     run(args)

@@ -12,7 +12,7 @@ LSF_COMMAND = "bsub -q gpuqueue -gpu " +\
 "\"num=1:j_exclusive=yes\" -R \"rusage[mem=5] span[ptile=1]\" -W 0:05 -Is "
 
 PYTHON_COMMAND =\
-"python /data/chodera/wangyq/bronx/scripts/node_classification/run.py"
+"python /data/chodera/wangyq/rum/scripts/node_classification/run.py"
 
 
 def args_to_command(args):
@@ -56,9 +56,9 @@ def experiment(args):
         "learning_rate": tune.loguniform(1e-4, 1e-1),
         "weight_decay": tune.loguniform(1e-6, 1e-3),
         "length": tune.randint(4, 16),
-        "lr": tune.loguniform(1e-4, 1e-1),
+        "learning_rate": tune.loguniform(1e-4, 1e-1),
         "temperature": tune.uniform(0.0, 1.0),
-        "consistency": tune.loguniform(1e-4, 1e-1),
+        "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,
         "num_layers": tune.randint(1, 3),
@@ -70,10 +70,10 @@ def experiment(args):
     }
 
     tune_config = tune.TuneConfig(
-        metric="acc_vl",
+        metric="_metric/accuracy",
         mode="max",
         search_alg=HyperOptSearch(),
-        num_samples=1000,
+        num_samples=1,
     )
 
     run_config = air.RunConfig(
@@ -83,7 +83,7 @@ def experiment(args):
     )
 
     tuner = tune.Tuner(
-        tune.with_resources(objective, {"cpu": 1, "gpu": 1}),
+        objective,
         param_space=param_space,
         tune_config=tune_config,
         run_config=run_config,
