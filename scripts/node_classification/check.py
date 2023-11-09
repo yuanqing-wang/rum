@@ -18,7 +18,7 @@ def check(args):
         except:
             pass
 
-    print(results)
+    # print(results)
     results = sorted(results, key=lambda x: x["acc_vl"], reverse=True)
 
     print(results[0]["acc_vl"], results[0]["acc_te"])
