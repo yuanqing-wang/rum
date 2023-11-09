@@ -9,7 +9,7 @@ import torch
 import os
 ray.init(num_cpus=os.cpu_count())
 LSF_COMMAND = "bsub -q gpuqueue -gpu " +\
-"\"num=1:j_exclusive=yes\" -R \"rusage[mem=5] span[ptile=1]\" -W 0:05 -Is "
+"\"num=1:j_exclusive=yes\" -R \"rusage[mem=5] span[ptile=1]\" -W 0:10 -Is "
 
 PYTHON_COMMAND =\
 "python /data/chodera/wangyq/rum/scripts/node_classification/run.py"
