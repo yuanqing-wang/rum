@@ -1,3 +1,4 @@
+import os
 from types import SimpleNamespace
 from datetime import datetime
 from run import run
@@ -11,6 +12,8 @@ ray.init(num_cpus=num_gpus, num_gpus=num_gpus)
 
 
 def objective(config):
+    checkpoint = os.path.join(os.getcwd(), "model.pt")
+    config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
     acc_vl, acc_te = run(args)
     tune.report(acc_vl=acc_vl, acc_te=acc_te)
@@ -19,14 +22,13 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
     param_space = {
         "data": args.data,
-        "hidden_features": tune.randint(8, 32),
+        "hidden_features": tune.lograndint(32, 256, base=2),
         "learning_rate": tune.loguniform(1e-4, 1e-1),
         "weight_decay": tune.loguniform(1e-6, 1e-3),
         "length": tune.randint(4, 16),
-        "lr": tune.loguniform(1e-4, 1e-1),
+        "learning_rate": tune.loguniform(1e-4, 1e-1),
         "temperature": tune.uniform(0.0, 1.0),
-        "consistency": tune.loguniform(1e-4, 1e-1),
-        "dropout": tune.uniform(0.0, 1.0),
+        "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,
         "num_layers": tune.randint(1, 3),
@@ -35,7 +37,7 @@ def experiment(args):
         "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
         "consistency_weight": tune.loguniform(1e-4, 1e-1),
         "dropout": tune.uniform(0.0, 1.0),
-
+        "checkpoint": 1,
     }
 
     tune_config = tune.TuneConfig(
