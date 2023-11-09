@@ -20,8 +20,8 @@ class RUMLayer(torch.nn.Module):
     ):
         super().__init__()
         # out_features = out_features // 2
-        self.rnn = rnn(in_features + 2 * out_features, out_features, **kwargs)
-        self.rnn_walk = rnn(length, out_features, bidirectional=True, **kwargs)
+        self.rnn = rnn(in_features + out_features, out_features, **kwargs)
+        self.rnn_walk = rnn(length, out_features, bidirectional=False, **kwargs)
         self.fc = torch.nn.Linear(length, length, bias=False)
         self.fc_self = torch.nn.Linear(in_features, out_features, bias=False)
         self.in_features = in_features
@@ -64,9 +64,9 @@ class RUMLayer(torch.nn.Module):
         num_directions = 2 if self.rnn_walk.bidirectional else 1
         h0 = torch.zeros(self.rnn_walk.num_layers * num_directions, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
+        h_walk = h_walk.mean(0, keepdim=True)
         h = torch.cat([h, y_walk], dim=-1)
         y, h = self.rnn(h, h_walk)
-        h_walk = h_walk.mean(0, keepdim=True)
         if self.training:
             loss = self.self_supervise(y, y0[walks])
         else:
