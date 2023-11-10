@@ -6,8 +6,6 @@ import dgl
 # from ogb.nodeproppred import DglNodePropPredDataset
 dgl.use_libxsmm(False)
 
-from torch.optim.swa_utils import AveragedModel, SWALR
-
 def get_graph(data):
     from dgl.data import (
         CoraGraphDataset,
@@ -79,10 +77,12 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, 
+        T_max=args.n_epochs,
+    )
 
-    swa_model = AveragedModel(model)
-    swa_scheduler = SWALR(optimizer, swa_lr=args.swa_lr)
-
+    acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
         h, loss = model(g, g.ndata["feat"])
@@ -94,19 +94,33 @@ def run(args):
         ) 
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
-        if idx > args.swa_start:
-            swa_model.update_parameters(model)
-            swa_scheduler.step()
+        with torch.no_grad():
+            h, _ = model(g, g.ndata["feat"])
+            h = h.mean(0)
+            acc_tr = (
+                h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
+            ).float().mean().item()
+            acc_vl = (
+                h.argmax(-1)[g.ndata["val_mask"]] == g.ndata["label"][g.ndata["val_mask"]]
+            ).float().mean().item()
+            acc_te = (
+                h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
+            ).float().mean().item()
+            # print(
+            #     f"Epoch: {idx+1:03d}, "
+            #     f"Loss: {loss.item():.4f}, "
+            #     f"Train Acc: {acc_tr:.4f}, "
+            #     f"Val Acc: {acc_vl:.4f}, "
+            #     f"Test Acc: {acc_te:.4f}"
+            # )
 
-    if args.checkpoint:
-        torch.save(model, args.checkpoint)
-    
-    h, _ = swa_model(g, g.ndata["feat"])
-    h = h.mean(0)
-    acc_vl_max = (h.argmax(-1) == g.ndata["label"]).float()[g.ndata["val_mask"]].mean()
-    acc_te_max = (h.argmax(-1) == g.ndata["label"]).float()[g.ndata["test_mask"]].mean()
-
+            if acc_vl > acc_vl_max:
+                acc_vl_max = acc_vl
+                acc_te_max = acc_te
+                print(acc_vl_max, acc_te_max)
+            
     print(
         "ACCURACY,"
         f"{acc_vl_max:.4f},"
