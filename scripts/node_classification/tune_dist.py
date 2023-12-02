@@ -73,13 +73,13 @@ def experiment(args):
         metric="_metric/accuracy",
         mode="max",
         search_alg=HyperOptSearch(),
-        num_samples=1,
+        num_samples=1000,
     )
 
     run_config = air.RunConfig(
         name=name,
         storage_path=args.data,
-        verbose=1,
+        # verbose=1,
     )
 
     tuner = tune.Tuner(

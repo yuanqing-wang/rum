@@ -1,7 +1,5 @@
 import numpy as np
 import torch
-import pyro
-from pyro import poutine
 import dgl
 # from ogb.nodeproppred import DglNodePropPredDataset
 dgl.use_libxsmm(False)
@@ -77,9 +75,11 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 
-        T_max=args.n_epochs,
+        mode="max",
+        factor=args.factor,
+        patience=args.patience,
     )
 
     acc_vl_max, acc_te_max = 0, 0
@@ -94,7 +94,7 @@ def run(args):
         ) 
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        
 
         with torch.no_grad():
             h, _ = model(g, g.ndata["feat"])
@@ -116,16 +116,12 @@ def run(args):
             #     f"Test Acc: {acc_te:.4f}"
             # )
 
+            scheduler.step(acc_vl)
+
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
                 print(acc_vl_max, acc_te_max)
-            
-    print(
-        "ACCURACY,"
-        f"{acc_vl_max:.4f},"
-        f"{acc_te_max:.4f}"
-    )
 
     return acc_vl_max, acc_te_max
         
@@ -142,7 +138,8 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=1000)
-    parser.add_argument("--swa_start", type=int, default=500)
+    parser.add_argument("--factor", type=float, default=0.5)
+    parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--consistency_weight", type=float, default=0.1)
@@ -150,6 +147,6 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--checkpoint", type=str, default="")
-    parser.add_argument("--swa_lr", type=float, default=0.05)
+    
     args = parser.parse_args()
     run(args)

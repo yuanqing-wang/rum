@@ -3,7 +3,6 @@ import glob
 import json
 import pandas as pd
 import torch
-import pyro
 import dgl
 
 def check(args):
