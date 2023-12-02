@@ -23,7 +23,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
     param_space = {
         "data": args.data,
-        "hidden_features": tune.lograndint(32, 256, base=2),
+        "hidden_features": tune.lograndint(32, 128, base=2),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
         "length": tune.randint(3, 16),
@@ -31,14 +31,15 @@ def experiment(args):
         "optimizer": "Adam",
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
-        "num_samples": 16,
-        "n_epochs": 500,
+        "num_samples": 8,
+        "n_epochs": 500,  
         "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
         "consistency_weight": tune.loguniform(1e-4, 1e-1),
-        "dropout": tune.uniform(0.0, 1.0),
+        "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
         "factor": tune.uniform(0.0, 1.0),
         "patience": tune.randint(5, 15),
+        "activation": tune.choice(["SiLU", "ELU", "ReLU"]),
     }
 
     tune_config = tune.TuneConfig(
@@ -51,7 +52,7 @@ def experiment(args):
     run_config = air.RunConfig(
         name=name,
         storage_path=os.path.join(os.getcwd(), args.data),
-        # verbose=1,
+        verbose=0,
     )
 
     tuner = tune.Tuner(

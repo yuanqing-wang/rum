@@ -60,6 +60,7 @@ def run(args):
         num_layers=1,
         self_supervise_weight=args.self_supervise_weight,
         consistency_weight=args.consistency_weight,
+        activation=getattr(torch.nn, args.activation)(),
     )
 
     if torch.cuda.is_available():
@@ -118,11 +119,14 @@ def run(args):
 
             scheduler.step(acc_vl)
 
+            if optimizer.param_groups[0]["lr"] < 1e-6:
+                break
+
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
-                print(acc_vl_max, acc_te_max)
-
+    
+    print(acc_vl_max, acc_te_max, flush=True)
     return acc_vl_max, acc_te_max
         
 
@@ -146,6 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
+    parser.add_argument("--activation", type=str, default="ReLU")
     parser.add_argument("--checkpoint", type=str, default="")
     
     args = parser.parse_args()

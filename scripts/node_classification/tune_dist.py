@@ -79,7 +79,7 @@ def experiment(args):
     run_config = air.RunConfig(
         name=name,
         storage_path=args.data,
-        # verbose=1,
+        verbose=1,
     )
 
     tuner = tune.Tuner(
