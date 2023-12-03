@@ -55,11 +55,11 @@ def run(args):
         depth=args.depth,
         num_samples=args.num_samples,
         length=args.length,
-        temperature=args.consistency_temperature,
+        # temperature=args.consistency_temperature,
         dropout=args.dropout,
         num_layers=1,
         self_supervise_weight=args.self_supervise_weight,
-        consistency_weight=args.consistency_weight,
+        # consistency_weight=args.consistency_weight,
         activation=getattr(torch.nn, args.activation)(),
     )
 
@@ -87,7 +87,7 @@ def run(args):
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
         h, loss = model(g, g.ndata["feat"])
-        h = h.mean(0).log()
+        h = h.log().mean(0)
 
         loss = loss + torch.nn.NLLLoss()(
             h[g.ndata["train_mask"]], 
@@ -109,13 +109,13 @@ def run(args):
             acc_te = (
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
             ).float().mean().item()
-            # print(
-            #     f"Epoch: {idx+1:03d}, "
-            #     f"Loss: {loss.item():.4f}, "
-            #     f"Train Acc: {acc_tr:.4f}, "
-            #     f"Val Acc: {acc_vl:.4f}, "
-            #     f"Test Acc: {acc_te:.4f}"
-            # )
+            print(
+                f"Epoch: {idx+1:03d}, "
+                f"Loss: {loss.item():.4f}, "
+                f"Train Acc: {acc_tr:.4f}, "
+                f"Val Acc: {acc_vl:.4f}, "
+                f"Test Acc: {acc_te:.4f}"
+            )
 
             scheduler.step(acc_vl)
 
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden_features", type=int, default=64)
+    parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=16)
     parser.add_argument("--length", type=int, default=8)
@@ -146,8 +146,8 @@ if __name__ == "__main__":
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=1.0)
-    parser.add_argument("--consistency_weight", type=float, default=0.1)
-    parser.add_argument("--consistency_temperature", type=float, default=0.5)
+    # parser.add_argument("--consistency_weight", type=float, default=0.1)
+    # parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="ReLU")
