@@ -109,13 +109,13 @@ def run(args):
             acc_te = (
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
             ).float().mean().item()
-            print(
-                f"Epoch: {idx+1:03d}, "
-                f"Loss: {loss.item():.4f}, "
-                f"Train Acc: {acc_tr:.4f}, "
-                f"Val Acc: {acc_vl:.4f}, "
-                f"Test Acc: {acc_te:.4f}"
-            )
+            # print(
+            #     f"Epoch: {idx+1:03d}, "
+            #     f"Loss: {loss.item():.4f}, "
+            #     f"Train Acc: {acc_tr:.4f}, "
+            #     f"Val Acc: {acc_vl:.4f}, "
+            #     f"Test Acc: {acc_te:.4f}"
+            # )
 
             scheduler.step(acc_vl)
 

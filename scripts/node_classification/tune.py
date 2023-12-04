@@ -17,7 +17,7 @@ def objective(config):
     config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
     acc_vl, acc_te = run(args)
-    ray.train.report(dict(acc_vl=acc_vl, acc_te=acc_te))
+    session.report(dict(acc_vl=acc_vl, acc_te=acc_te))
 
 def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
@@ -34,16 +34,16 @@ def experiment(args):
         "num_samples": 8,
         "n_epochs": 500,  
         "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
-        "consistency_weight": tune.loguniform(1e-4, 1e-1),
+        # "consistency_weight": tune.loguniform(1e-4, 1e-1),
         "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
         "factor": tune.uniform(0.0, 1.0),
         "patience": tune.randint(5, 15),
-        "activation": tune.choice(["SiLU", "ELU", "ReLU"]),
+        "activation": "SiLU",
     }
 
     tune_config = tune.TuneConfig(
-        metric="acc_vl",
+        metric="_metric/acc_vl",
         mode="max",
         search_alg=HyperOptSearch(),
         num_samples=10000,
