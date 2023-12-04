@@ -2,7 +2,7 @@ from unicodedata import bidirectional
 import torch
 import dgl
 from .random_walk import uniform_random_walk, uniqueness
-from .rnn import GRU
+from .rnn import GRU, MultiheadAttention
 
 class RUMLayer(torch.nn.Module):
     def __init__(
@@ -20,10 +20,10 @@ class RUMLayer(torch.nn.Module):
     ):
         super().__init__()
         # out_features = out_features // 2
-        self.rnn = rnn(in_features + 2 * out_features, out_features, **kwargs)
+        self.rnn = rnn(out_features, out_features, **kwargs)
         self.rnn_walk = rnn(length, out_features, bidirectional=True, **kwargs)
-        self.fc = torch.nn.Linear(length, length, bias=True)
-        self.fc_self = torch.nn.Linear(in_features, out_features, bias=True)
+        self.att = MultiheadAttention(out_features, 1)
+        self.fc = torch.nn.Linear(in_features + 2 * out_features, out_features, bias=True)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
@@ -65,6 +65,8 @@ class RUMLayer(torch.nn.Module):
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h_walk = h_walk.mean(0, keepdim=True)
         h = torch.cat([h, y_walk], dim=-1)
+        h = self.fc(h)
+        h = self.att(h)
         y, h = self.rnn(h, h_walk)
         if self.training:
             loss = self.self_supervise(y, y0[walks])

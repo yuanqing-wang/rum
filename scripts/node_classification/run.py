@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("--factor", type=float, default=0.5)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
+    parser.add_argument("--self_supervise_weight", type=float, default=0.1)
     # parser.add_argument("--consistency_weight", type=float, default=0.1)
     # parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)

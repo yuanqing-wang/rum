@@ -70,6 +70,10 @@ class LSTM(torch.nn.LSTM):
         return output, h_n
 
 class MultiheadAttention(torch.nn.MultiheadAttention):
+    def __init__(self, *args, **kwargs):
+        kwargs["batch_first"] = True
+        super().__init__(*args, **kwargs)
+    
     def forward(self, h):
         """Forward pass.
 
