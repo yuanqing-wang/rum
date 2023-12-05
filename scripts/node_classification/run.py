@@ -57,7 +57,7 @@ def run(args):
         length=args.length,
         # temperature=args.consistency_temperature,
         dropout=args.dropout,
-        num_layers=1,
+        num_layers=args.num_layers,
         self_supervise_weight=args.self_supervise_weight,
         # consistency_weight=args.consistency_weight,
         activation=getattr(torch.nn, args.activation)(),
@@ -99,7 +99,7 @@ def run(args):
 
         with torch.no_grad():
             h, _ = model(g, g.ndata["feat"])
-            h = h.mean(0)
+            h = h.log().mean(0)
             acc_tr = (
                 h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
             ).float().mean().item()
@@ -109,13 +109,15 @@ def run(args):
             acc_te = (
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
             ).float().mean().item()
-            # print(
-            #     f"Epoch: {idx+1:03d}, "
-            #     f"Loss: {loss.item():.4f}, "
-            #     f"Train Acc: {acc_tr:.4f}, "
-            #     f"Val Acc: {acc_vl:.4f}, "
-            #     f"Test Acc: {acc_te:.4f}"
-            # )
+
+            if __name__ == "__main__":
+                print(
+                    f"Epoch: {idx+1:03d}, "
+                    f"Loss: {loss.item():.4f}, "
+                    f"Train Acc: {acc_tr:.4f}, "
+                    f"Val Acc: {acc_vl:.4f}, "
+                    f"Test Acc: {acc_te:.4f}"
+                )
 
             scheduler.step(acc_vl)
 
@@ -145,12 +147,12 @@ if __name__ == "__main__":
     parser.add_argument("--factor", type=float, default=0.5)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
+    parser.add_argument("--self_supervise_weight", type=float, default=0.2)
     # parser.add_argument("--consistency_weight", type=float, default=0.1)
     # parser.add_argument("--consistency_temperature", type=float, default=0.5)
-    parser.add_argument("--dropout", type=float, default=0.5)
+    parser.add_argument("--dropout", type=float, default=0.2)
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--activation", type=str, default="ReLU")
+    parser.add_argument("--activation", type=str, default="SiLU")
     parser.add_argument("--checkpoint", type=str, default="")
     
     args = parser.parse_args()
