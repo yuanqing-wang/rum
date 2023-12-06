@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--activation", type=str, default="ReLU")
+    parser.add_argument("--activation", type=str, default="Identity")
     parser.add_argument("--checkpoint", type=str, default="")
     
     args = parser.parse_args()

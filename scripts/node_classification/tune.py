@@ -33,13 +33,13 @@ def experiment(args):
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
         "n_epochs": 500,  
-        "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
-        "consistency_weight": tune.loguniform(1e-4, 1e-1),
+        "self_supervise_weight": tune.loguniform(1e-4, 1.0),
+        "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
         "factor": tune.uniform(0.0, 1.0),
         "patience": tune.randint(5, 15),
-        "activation": tune.choice(["SiLU", "ELU", "ReLU"]),
+        "activation": tune.choice(["SiLU"]),
     }
 
     tune_config = tune.TuneConfig(
