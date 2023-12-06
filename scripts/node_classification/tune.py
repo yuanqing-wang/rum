@@ -17,7 +17,7 @@ def objective(config):
     config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
     acc_vl, acc_te = run(args)
-    ray.train.report(dict(acc_vl=acc_vl, acc_te=acc_te))
+    session.report(dict(acc_vl=acc_vl, acc_te=acc_te))
 
 def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
@@ -43,7 +43,7 @@ def experiment(args):
     }
 
     tune_config = tune.TuneConfig(
-        metric="acc_vl",
+        metric="_metric/acc_vl",
         mode="max",
         search_alg=HyperOptSearch(),
         num_samples=10000,

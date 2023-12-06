@@ -1,4 +1,4 @@
-from unicodedata import bidirectional
+import math
 import torch
 import dgl
 from .random_walk import uniform_random_walk, uniqueness
