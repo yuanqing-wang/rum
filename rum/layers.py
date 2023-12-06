@@ -1,4 +1,4 @@
-from unicodedata import bidirectional
+import math
 import torch
 import dgl
 from .random_walk import uniform_random_walk, uniqueness
@@ -21,9 +21,9 @@ class RUMLayer(torch.nn.Module):
         super().__init__()
         # out_features = out_features // 2
         self.rnn = rnn(in_features + 2 * out_features, out_features, **kwargs)
-        self.rnn_walk = rnn(length, out_features, bidirectional=True, **kwargs)
-        self.fc = torch.nn.Linear(length, length, bias=True)
-        self.fc_self = torch.nn.Linear(in_features, out_features, bias=True)
+        self.rnn_walk = rnn(2, out_features, bidirectional=True, **kwargs)
+        # self.fc = torch.nn.Linear(length, length, bias=True)
+        # self.fc_self = torch.nn.Linear(in_features, out_features, bias=True)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
@@ -56,9 +56,15 @@ class RUMLayer(torch.nn.Module):
         )
         uniqueness_walk = uniqueness(walks)
         walks, uniqueness_walk = walks.flip(-1), uniqueness_walk.flip(-1)
-        uniqueness_walk = torch.nn.functional.one_hot(
-            uniqueness_walk, num_classes=self.length
-        ).float()
+        uniqueness_walk = uniqueness_walk / uniqueness_walk.shape[-1]
+        uniqueness_walk = uniqueness_walk * math.pi * 2.0
+        uniqueness_walk = torch.cat(
+            [
+                uniqueness_walk.sin().unsqueeze(-1),
+                uniqueness_walk.cos().unsqueeze(-1),
+            ],
+            dim=-1,
+        )
         h = h[walks]
         num_directions = 2 if self.rnn_walk.bidirectional else 1
         h0 = torch.zeros(self.rnn_walk.num_layers * num_directions, *h.shape[:-2], self.out_features, device=h.device)
@@ -70,7 +76,6 @@ class RUMLayer(torch.nn.Module):
             loss = self.self_supervise(y, y0[walks])
         else:
             loss = 0.0
-
         h = self.activation(h)
         h = h.mean(0)
         h = self.dropout(h)
