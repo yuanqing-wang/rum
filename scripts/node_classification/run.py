@@ -76,6 +76,13 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
+
+    for _ in range(1000):
+        optimizer.zero_grad()
+        _, loss = model(g, g.ndata["feat"], consistency_weight=0.0)
+        loss.backward()
+        optimizer.step()
+
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer, 
     #     mode="max",
@@ -151,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("--consistency_weight", type=float, default=0.1)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
-    parser.add_argument("--num_layers", type=int, default=1)
+    parser.add_argument("--num_layers", type=int, default=2)
     parser.add_argument("--activation", type=str, default="Identity")
     parser.add_argument("--checkpoint", type=str, default="")
     
