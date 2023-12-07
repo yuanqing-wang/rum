@@ -76,12 +76,12 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 
-        mode="max",
-        factor=args.factor,
-        patience=args.patience,
-    )
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, 
+    #     mode="max",
+    #     factor=args.factor,
+    #     patience=args.patience,
+    # )
 
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
@@ -109,18 +109,20 @@ def run(args):
             acc_te = (
                 h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
             ).float().mean().item()
-            # print(
-            #     f"Epoch: {idx+1:03d}, "
-            #     f"Loss: {loss.item():.4f}, "
-            #     f"Train Acc: {acc_tr:.4f}, "
-            #     f"Val Acc: {acc_vl:.4f}, "
-            #     f"Test Acc: {acc_te:.4f}"
-            # )
 
-            scheduler.step(acc_vl)
+            if __name__ == "__main__":
+                print(
+                    f"Epoch: {idx+1:03d}, "
+                    f"Loss: {loss.item():.4f}, "
+                    f"Train Acc: {acc_tr:.4f}, "
+                    f"Val Acc: {acc_vl:.4f}, "
+                    f"Test Acc: {acc_te:.4f}"
+                )
 
-            if optimizer.param_groups[0]["lr"] < 1e-6:
-                break
+            # scheduler.step(acc_vl)
+
+            # if optimizer.param_groups[0]["lr"] < 1e-6:
+            #     break
 
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
@@ -142,8 +144,8 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=1000)
-    parser.add_argument("--factor", type=float, default=0.5)
-    parser.add_argument("--patience", type=int, default=10)
+    # parser.add_argument("--factor", type=float, default=0.5)
+    # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--consistency_weight", type=float, default=0.1)
