@@ -110,5 +110,4 @@ class SelfSupervise(torch.nn.Module):
             pos_weight=y.detach().mean().pow(-1)
         )(y_hat, y)
         accuracy = ((y_hat.sigmoid() > 0.5) == y).float().mean()
-        print(accuracy.item())
         return loss 
