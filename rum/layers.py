@@ -20,7 +20,7 @@ class RUMLayer(torch.nn.Module):
     ):
         super().__init__()
         # out_features = out_features // 2
-        self.rnn = rnn(in_features + 2 * out_features, out_features, **kwargs)
+        self.rnn = rnn(in_features + 2 * out_features + 1, out_features, **kwargs)
         self.rnn_walk = rnn(2, out_features, bidirectional=True, **kwargs)
         # self.fc = torch.nn.Linear(length, length, bias=True)
         # self.fc_self = torch.nn.Linear(in_features, out_features, bias=True)
@@ -66,11 +66,13 @@ class RUMLayer(torch.nn.Module):
             dim=-1,
         )
         h = h[walks]
+        degrees = g.in_degrees(walks.flatten()).float().reshape(*walks.shape).unsqueeze(-1)
+        degrees = degrees / degrees.max()
         num_directions = 2 if self.rnn_walk.bidirectional else 1
         h0 = torch.zeros(self.rnn_walk.num_layers * num_directions, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h_walk = h_walk.mean(0, keepdim=True)
-        h = torch.cat([h, y_walk], dim=-1)
+        h = torch.cat([h, y_walk, degrees], dim=-1)
         y, h = self.rnn(h, h_walk)
         if self.training:
             loss = self.self_supervise(y, y0[walks])
@@ -80,7 +82,7 @@ class RUMLayer(torch.nn.Module):
         h = h.mean(0)
         h = self.dropout(h)
         return h, loss
-
+    
 class Consistency(torch.nn.Module):
     def __init__(self, temperature):
         super().__init__()
@@ -104,5 +106,8 @@ class SelfSupervise(torch.nn.Module):
         y = y[..., idxs, 1:, :].contiguous()
         y_hat = y_hat[..., idxs, :-1, :].contiguous()
         y_hat = self.fc(y_hat)
-        loss = torch.nn.BCEWithLogitsLoss(pos_weight=y.detach().mean().pow(-1))(y_hat, y)
-        return loss
+        loss = torch.nn.BCEWithLogitsLoss(
+            pos_weight=y.detach().mean().pow(-1)
+        )(y_hat, y)
+        accuracy = ((y_hat.sigmoid() > 0.5) == y).float().mean()
+        return loss 

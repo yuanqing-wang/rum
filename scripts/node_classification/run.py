@@ -76,12 +76,19 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 
-        mode="max",
-        factor=args.factor,
-        patience=args.patience,
-    )
+
+    # for _ in range(1000):
+    #     optimizer.zero_grad()
+    #     _, loss = model(g, g.ndata["feat"], consistency_weight=0.0)
+    #     loss.backward()
+    #     optimizer.step()
+
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, 
+    #     mode="max",
+    #     factor=args.factor,
+    #     patience=args.patience,
+    # )
 
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
@@ -119,10 +126,10 @@ def run(args):
                     f"Test Acc: {acc_te:.4f}"
                 )
 
-            scheduler.step(acc_vl)
+            # scheduler.step(acc_vl)
 
-            if optimizer.param_groups[0]["lr"] < 1e-6:
-                break
+            # if optimizer.param_groups[0]["lr"] < 1e-6:
+            #     break
 
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
@@ -138,14 +145,14 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
     parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num_samples", type=int, default=16)
+    parser.add_argument("--num_samples", type=int, default=8)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=1000)
-    parser.add_argument("--factor", type=float, default=0.5)
-    parser.add_argument("--patience", type=int, default=10)
+    # parser.add_argument("--factor", type=float, default=0.5)
+    # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=0.2)
     # parser.add_argument("--consistency_weight", type=float, default=0.1)

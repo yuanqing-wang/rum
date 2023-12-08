@@ -23,7 +23,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
     param_space = {
         "data": args.data,
-        "hidden_features": tune.lograndint(32, 128, base=2),
+        "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
         "length": tune.randint(3, 16),
@@ -46,7 +46,7 @@ def experiment(args):
         metric="_metric/acc_vl",
         mode="max",
         search_alg=HyperOptSearch(),
-        num_samples=10000,
+        num_samples=1000,
     )
 
     run_config = air.RunConfig(

@@ -30,8 +30,10 @@ class RUMModel(torch.nn.Module):
         self.self_supervise_weight = self_supervise_weight
         # self.consistency_weight = consistency_weight
 
-    def forward(self, g, h):
+    def forward(self, g, h, consistency_weight=None):
         g = g.local_var()
+        if consistency_weight is None:
+            consistency_weight = self.consistency_weight
         h0 = h
         h = self.fc_in(h)
         loss = 0.0
@@ -41,20 +43,10 @@ class RUMModel(torch.nn.Module):
             h, _loss = layer(g, h, h0)
             loss = loss + self.self_supervise_weight * _loss
         h = self.fc_out(h).softmax(-1)
-        # _loss = self.consistency(h)
-        # _loss = _loss * self.consistency_weight
-        # loss = loss + _loss
-        return h, loss
-
-    def train_self_supervised(self, g, h):
-        g = g.local_var()
-        h0 = h
-        h = self.fc_in(h)
-        loss = 0.0
-        for idx, layer in enumerate(self.layers):
-            if idx > 0:
-                h = h.mean(0)
-            h, _loss = layer.train_self_supervised(g, h, h0)
+        if self.training:
+            _loss = self.consistency(h)
+            _loss = _loss * consistency_weight
             loss = loss + _loss
         return h, loss
+
     
