@@ -23,7 +23,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
     param_space = {
         "data": args.data,
-        "hidden_features": tune.lograndint(32, 128, base=2),
+        "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
         "length": tune.randint(3, 16),
@@ -32,19 +32,19 @@ def experiment(args):
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 500,  
+        "n_epochs": 1000,  
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
-        "activation": tune.choice(["SiLU", "ELU", "ReLU"]),
+        "activation": "SiLU",
     }
 
     tune_config = tune.TuneConfig(
         metric="_metric/acc_vl",
         mode="max",
         search_alg=HyperOptSearch(),
-        num_samples=10000,
+        num_samples=1000,
     )
 
     run_config = air.RunConfig(

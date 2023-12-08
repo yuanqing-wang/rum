@@ -82,7 +82,7 @@ class RUMLayer(torch.nn.Module):
         h = h.mean(0)
         h = self.dropout(h)
         return h, loss
-
+    
 class Consistency(torch.nn.Module):
     def __init__(self, temperature):
         super().__init__()
@@ -106,5 +106,8 @@ class SelfSupervise(torch.nn.Module):
         y = y[..., idxs, 1:, :].contiguous()
         y_hat = y_hat[..., idxs, :-1, :].contiguous()
         y_hat = self.fc(y_hat)
-        loss = torch.nn.BCEWithLogitsLoss(pos_weight=y.detach().mean().pow(-1))(y_hat, y)
-        return loss
+        loss = torch.nn.BCEWithLogitsLoss(
+            pos_weight=y.detach().mean().pow(-1)
+        )(y_hat, y)
+        accuracy = ((y_hat.sigmoid() > 0.5) == y).float().mean()
+        return loss 
