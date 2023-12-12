@@ -1,4 +1,4 @@
-from typing import Callable, Self
+from typing import Callable
 import torch
 from .layers import RUMLayer, Consistency
 
