@@ -67,7 +67,6 @@ class RUMLayer(torch.nn.Module):
         )
         h = h[walks]
         degrees = g.in_degrees(walks.flatten()).float().reshape(*walks.shape).unsqueeze(-1)
-        degrees = degrees / degrees.max()
         num_directions = 2 if self.rnn_walk.bidirectional else 1
         h0 = torch.zeros(self.rnn_walk.num_layers * num_directions, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
@@ -75,7 +74,7 @@ class RUMLayer(torch.nn.Module):
         h = torch.cat([h, y_walk, degrees], dim=-1)
         y, h = self.rnn(h, h_walk)
         if self.training:
-            loss = self.self_supervise(y, y0[walks])
+            loss = self.self_supervise(y, y0[walks], degrees)
         else:
             loss = 0.0
         h = self.activation(h)
@@ -98,16 +97,18 @@ class Consistency(torch.nn.Module):
 class SelfSupervise(torch.nn.Module):
     def __init__(self, in_features, out_features, subsample=100):
         super().__init__()
-        self.fc = torch.nn.Linear(in_features, out_features)
+        self.fc = torch.nn.Linear(in_features, out_features+1)
+        self.out_features = out_features
         self.subsample = subsample
 
-    def forward(self, y_hat, y):
+    def forward(self, y_hat, y, degrees):
         idxs = torch.randint(high=y_hat.shape[-3], size=(self.subsample, ), device=y.device)
         y = y[..., idxs, 1:, :].contiguous()
         y_hat = y_hat[..., idxs, :-1, :].contiguous()
-        y_hat = self.fc(y_hat)
+        y_hat, degrees_hat = self.fc(y_hat).split([self.out_features, 1], dim=-1)
         loss = torch.nn.BCEWithLogitsLoss(
             pos_weight=y.detach().mean().pow(-1)
-        )(y_hat, y)
-        accuracy = ((y_hat.sigmoid() > 0.5) == y).float().mean()
+        )(y_hat, y)\
+            + 0.001 * torch.nn.L1Loss()(degrees_hat, degrees[..., idxs, :-1, :].contiguous())
+
         return loss 
