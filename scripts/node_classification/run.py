@@ -106,7 +106,7 @@ def run(args):
 
         with torch.no_grad():
             h, _ = model(g, g.ndata["feat"])
-            h = h.log().mean(0)
+            h = h.mean(0).log()
             acc_tr = (
                 h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
             ).float().mean().item()
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=1000)
+    parser.add_argument("--n_epochs", type=int, default=2000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)

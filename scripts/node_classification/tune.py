@@ -26,13 +26,13 @@ def experiment(args):
         "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
-        "length": tune.randint(3, 16),
+        "length": 8,
         "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 500,  
+        "n_epochs": 2000,  
         "self_supervise_weight": tune.loguniform(1e-4, 1e-1),
         # "consistency_weight": tune.loguniform(1e-4, 1e-1),
         "dropout": tune.uniform(0.0, 0.5),
@@ -52,7 +52,7 @@ def experiment(args):
     run_config = air.RunConfig(
         name=name,
         storage_path=os.path.join(os.getcwd(), args.data),
-        verbose=0,
+        # verbose=0,
     )
 
     tuner = tune.Tuner(

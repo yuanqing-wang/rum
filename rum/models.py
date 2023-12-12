@@ -1,4 +1,4 @@
-from typing import Callable, Self
+from typing import Callable
 import torch
 from .layers import RUMLayer, Consistency
 
@@ -32,8 +32,6 @@ class RUMModel(torch.nn.Module):
 
     def forward(self, g, h, consistency_weight=None):
         g = g.local_var()
-        if consistency_weight is None:
-            consistency_weight = self.consistency_weight
         h0 = h
         h = self.fc_in(h)
         loss = 0.0
@@ -43,10 +41,6 @@ class RUMModel(torch.nn.Module):
             h, _loss = layer(g, h, h0)
             loss = loss + self.self_supervise_weight * _loss
         h = self.fc_out(h).softmax(-1)
-        if self.training:
-            _loss = self.consistency(h)
-            _loss = _loss * consistency_weight
-            loss = loss + _loss
         return h, loss
 
     
