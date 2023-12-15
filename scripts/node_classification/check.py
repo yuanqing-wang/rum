@@ -18,8 +18,8 @@ def check(args):
             pass
 
     # print(results)
-    results = sorted(results, key=lambda x: x["_metric"]["acc_vl"], reverse=True)
-    print(results[0]["_metric"]["acc_vl"], results[0]["_metric"]["acc_te"])
+    results = sorted(results, key=lambda x: x["acc_vl"], reverse=True)
+    print(results[0]["acc_vl"], results[0]["acc_te"])
     print(results[0]["config"], flush=True)
 
     if len(args.report) > 1:

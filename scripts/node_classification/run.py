@@ -14,6 +14,7 @@ def get_graph(data):
         AmazonCoBuyComputerDataset,
         AmazonCoBuyPhotoDataset,
         CornellDataset,
+        TexasDataset,
     )
 
     g = locals()[data](verbose=False)[0]
@@ -47,6 +48,13 @@ def get_graph(data):
 
 def run(args):
     g = get_graph(args.data)
+
+    if args.split_index >= 0:
+        g.ndata["train_mask"] = g.ndata["train_mask"][:, args.split_index]
+        g.ndata["val_mask"] = g.ndata["val_mask"][:, args.split_index]
+        g.ndata["test_mask"] = g.ndata["test_mask"][:, args.split_index]
+
+    
     from rum.models import RUMModel
     model = RUMModel(
         in_features=g.ndata["feat"].shape[-1],
@@ -89,6 +97,9 @@ def run(args):
     #     factor=args.factor,
     #     patience=args.patience,
     # )
+
+    from rum.utils import EarlyStopping
+    early_stopping = EarlyStopping(patience=args.patience)
 
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
@@ -134,6 +145,9 @@ def run(args):
             if acc_vl > acc_vl_max:
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
+                
+            if early_stopping([-acc_vl]):
+                break
     
     print(acc_vl_max, acc_te_max, flush=True)
     return acc_vl_max, acc_te_max
@@ -150,17 +164,18 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=1000)
+    parser.add_argument("--n_epochs", type=int, default=10000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=0.5)
+    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--consistency_weight", type=float, default=1)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="ELU")
     parser.add_argument("--checkpoint", type=str, default="")
-    
+    parser.add_argument("--split_index", type=int, default=-1)
+    parser.add_argument("--patience", type=int, default=500)
     args = parser.parse_args()
     run(args)

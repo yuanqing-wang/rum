@@ -17,7 +17,7 @@ def objective(config):
     config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
     acc_vl, acc_te = run(args)
-    session.report(dict(acc_vl=acc_vl, acc_te=acc_te))
+    ray.train.report(dict(acc_vl=acc_vl, acc_te=acc_te))
 
 def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S")
@@ -32,24 +32,31 @@ def experiment(args):
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 1000,  
+        "n_epochs": 2000,  
+        "patience": 500,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
         "activation": "SiLU",
+        "split_index": args.split_index,
     }
 
     tune_config = tune.TuneConfig(
-        metric="_metric/acc_vl",
+        metric="acc_vl",
         mode="max",
         search_alg=HyperOptSearch(),
         num_samples=1000,
     )
 
+    if args.split_index < 0:
+        storage_path = os.path.join(os.getcwd(), args.data)
+    else:
+        storage_path = os.path.join(os.getcwd(), args.data, str(args.split_index))
+    
     run_config = air.RunConfig(
         name=name,
-        storage_path=os.path.join(os.getcwd(), args.data),
+        storage_path=storage_path,
         verbose=0,
     )
 
@@ -66,5 +73,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
+    parser.add_argument("--split_index", type=int, default=-1)
     args = parser.parse_args()
     experiment(args)
