@@ -1,6 +1,6 @@
 from typing import Callable
 import torch
-from .layers import RUMLayer, Consistency
+from .layers import RUMLayer, Consistency, RUMDirectedLayer
 
 class RUMModel(torch.nn.Module):
     def __init__(
@@ -13,9 +13,14 @@ class RUMModel(torch.nn.Module):
             temperature=0.1,
             self_supervise_weight=0.05,
             consistency_weight=0.01,
+            directed=False,
             **kwargs,
     ):
         super().__init__()
+        if directed:
+            layer = RUMDirectedLayer
+        else:
+            layer = RUMLayer
         self.fc_in = torch.nn.Linear(in_features, hidden_features, bias=True)
         self.fc_out = torch.nn.Linear(hidden_features, out_features, bias=True)
         self.in_features = in_features
@@ -24,7 +29,7 @@ class RUMModel(torch.nn.Module):
         self.depth = depth
         self.layers = torch.nn.ModuleList()
         for _ in range(depth):
-            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, **kwargs))
+            self.layers.append(layer(hidden_features, hidden_features, in_features, **kwargs))
         self.activation = activation
         self.consistency = Consistency(temperature=temperature)
         self.self_supervise_weight = self_supervise_weight

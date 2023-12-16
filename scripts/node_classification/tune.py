@@ -40,6 +40,7 @@ def experiment(args):
         "checkpoint": 1,
         "activation": "SiLU",
         "split_index": args.split_index,
+        "directed": 1,
     }
 
     tune_config = tune.TuneConfig(
