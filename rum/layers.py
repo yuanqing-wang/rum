@@ -119,7 +119,9 @@ class RUMDirectedLayer(RUMLayer):
             num_samples=self.num_samples, 
             length=self.length,
         )
+
         uniqueness_walk = uniqueness(walks)
+
         walks, uniqueness_walk = walks.flip(-1), uniqueness_walk.flip(-1)
         uniqueness_walk = uniqueness_walk / uniqueness_walk.shape[-1]
         uniqueness_walk = uniqueness_walk * math.pi * 2.0
@@ -133,7 +135,7 @@ class RUMDirectedLayer(RUMLayer):
 
         src, dst = walks[..., :-1], walks[..., 1:]
         has_fwd_edge = g.has_edges_between(src.flatten(), dst.flatten()).reshape(*src.shape) * 1.0
-        has_bwd_edge = g.has_edges_between(src.flatten(), dst.flatten()).reshape(*src.shape) * 1.0
+        has_bwd_edge = g.has_edges_between(dst.flatten(), src.flatten()).reshape(*src.shape) * 1.0
         has_edge = has_fwd_edge - has_bwd_edge
         has_edge = has_edge.unsqueeze(-1)
 
@@ -153,10 +155,22 @@ class RUMDirectedLayer(RUMLayer):
         num_directions = 2 if self.rnn_walk.bidirectional else 1
         h0 = torch.zeros(self.rnn_walk.num_layers * num_directions, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(walk_embedding, h0)
-        y_walk = y_walk[..., ::2, :]
+        # y_walk = y_walk[..., ::2, :]
         h_walk = h_walk.mean(0, keepdim=True)
-        h = torch.cat([h, y_walk, degrees], dim=-1)
-        y, h = self.rnn(h, h_walk)
+        
+        y_walk = torch.cat(
+            [
+                y_walk,
+                torch.zeros(*y_walk.shape[:-1], h.shape[-1] + 1, device=y_walk.device),
+            ],
+            dim=-1,
+        )
+
+        y_walk[..., ::2, 2*self.out_features:-1] = h
+        y_walk[..., ::2, -1:] = degrees
+        # h = torch.cat([h, y_walk, degrees], dim=-1)
+        y, h = self.rnn(y_walk, h_walk)
+        y = y[..., ::2, :]
         if self.training:
             loss = self.self_supervise(y, y0[walks])
         else:

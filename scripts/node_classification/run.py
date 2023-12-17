@@ -85,7 +85,6 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
-
     # for _ in range(1000):
     #     optimizer.zero_grad()
     #     _, loss = model(g, g.ndata["feat"], consistency_weight=0.0)
