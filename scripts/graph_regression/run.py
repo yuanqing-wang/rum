@@ -4,48 +4,43 @@ import dgl
 # from ogb.nodeproppred import DglNodePropPredDataset
 dgl.use_libxsmm(False)
 
-def get_graph(data):
-    from dgl.data import (
-        CoraGraphDataset,
-        CiteseerGraphDataset,
-        PubmedGraphDataset,
-        CoauthorCSDataset,
-        CoauthorPhysicsDataset,
-        AmazonCoBuyComputerDataset,
-        AmazonCoBuyPhotoDataset,
-        CornellDataset,
-        TexasDataset,
+def get_graphs():
+    from dgllife.data import (
+        ESOL,
+        FreeSolv,
+        Lipophilicity,
+    )
+    from dgllife.utils import (
+        CanonicalAtomFeaturizer,
+        CanonicalBondFeaturizer,
+    )
+    data = locals()[args.data](
+        node_featurizer=CanonicalAtomFeaturizer("h0"),
+        edge_featurizer=CanonicalBondFeaturizer("e0"),
+    )
+    from dgllife.utils import RandomSplitter
+    splitter = RandomSplitter()
+    data_train, data_valid, data_test = splitter.train_val_test_split(
+        data, frac_train=0.8, frac_val=0.1, frac_test=0.1, 
+        random_state=args.seed,
     )
 
-    g = locals()[data](verbose=False)[0]
-    g = dgl.remove_self_loop(g)
+    _, g, y = next(iter(dgl.dataloading.GraphDataLoader(
+        data_train, batch_size=len(data_train),
+    )))
 
-    if "train_mask" not in g.ndata:
-        g.ndata["train_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
-        g.ndata["val_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
-        g.ndata["test_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
+    batch_size = args.batch_size if args.batch_size > 0 else len(data_train)
 
-        train_idxs = torch.tensor([], dtype=torch.int32)
-        val_idxs = torch.tensor([], dtype=torch.int32)
-        test_idxs = torch.tensor([], dtype=torch.int32)
+    data_train = dgl.dataloading.GraphDataLoader(
+        data_train, batch_size=batch_size, shuffle=True, drop_last=True
+    )
 
-        n_classes = g.ndata["label"].max() + 1
-        for idx_class in range(n_classes):
-            idxs = torch.where(g.ndata["label"] == idx_class)[0]
-            # print(idxs)
-            assert len(idxs) > 50
-            idxs = idxs[torch.randperm(len(idxs))]
-            _train_idxs = idxs[:20]
-            _val_idxs = idxs[20:50]
-            _test_idxs = idxs[50:]
-            train_idxs = torch.cat([train_idxs, _train_idxs])
-            val_idxs = torch.cat([val_idxs, _val_idxs])
-            test_idxs = torch.cat([test_idxs, _test_idxs])
+    data_valid = dgl.dataloading.GraphDataLoader(
+        data_valid, batch_size=len(data_valid),
+    )
 
-        g.ndata["train_mask"][train_idxs] = True
-        g.ndata["val_mask"][val_idxs] = True
-        g.ndata["test_mask"][test_idxs] = True
-    return g
+    return data_train, data_valid, data_test
+
 
 def run(args):
     g = get_graph(args.data)

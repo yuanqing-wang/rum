@@ -103,11 +103,11 @@ class SelfSupervise(torch.nn.Module):
 
     def forward(self, y_hat, y):
         idxs = torch.randint(high=y_hat.shape[-3], size=(self.subsample, ), device=y.device)
+        y, y_hat = y.flatten(0, -3), y_hat.flatten(0, -3)
         y = y[..., idxs, 1:, :].contiguous()
         y_hat = y_hat[..., idxs, :-1, :].contiguous()
         y_hat = self.fc(y_hat)
         loss = torch.nn.BCEWithLogitsLoss(
             pos_weight=y.detach().mean().pow(-1)
         )(y_hat, y)
-        accuracy = ((y_hat.sigmoid() > 0.5) == y).float().mean()
         return loss 
