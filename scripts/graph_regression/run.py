@@ -4,7 +4,7 @@ import dgl
 # from ogb.nodeproppred import DglNodePropPredDataset
 dgl.use_libxsmm(False)
 
-def get_graphs():
+def get_graphs(data, batch_size):
     from dgllife.data import (
         ESOL,
         FreeSolv,
@@ -14,7 +14,7 @@ def get_graphs():
         CanonicalAtomFeaturizer,
         CanonicalBondFeaturizer,
     )
-    data = locals()[args.data](
+    data = locals()[data](
         node_featurizer=CanonicalAtomFeaturizer("h0"),
         edge_featurizer=CanonicalBondFeaturizer("e0"),
     )
@@ -29,7 +29,7 @@ def get_graphs():
         data_train, batch_size=len(data_train),
     )))
 
-    batch_size = args.batch_size if args.batch_size > 0 else len(data_train)
+    batch_size = batch_size if batch_size > 0 else len(data_train)
 
     data_train = dgl.dataloading.GraphDataLoader(
         data_train, batch_size=batch_size, shuffle=True, drop_last=True
@@ -43,18 +43,13 @@ def get_graphs():
 
 
 def run(args):
-    g = get_graph(args.data)
+    data_train, data_valid, data_test = get_graphs(args.data, args.batch_size)
+    _, g, y = next(iter(data_train))
 
-    if args.split_index >= 0:
-        g.ndata["train_mask"] = g.ndata["train_mask"][:, args.split_index]
-        g.ndata["val_mask"] = g.ndata["val_mask"][:, args.split_index]
-        g.ndata["test_mask"] = g.ndata["test_mask"][:, args.split_index]
-
-    
-    from rum.models import RUMModel
-    model = RUMModel(
-        in_features=g.ndata["feat"].shape[-1],
-        out_features=g.ndata["label"].max()+1,
+    from rum.models import RUMGraphRegressionModel
+    model = RUMGraphRegressionModel(
+        in_features=g.ndata["h0"].shape[-1],
+        out_features=1,
         hidden_features=args.hidden_features,
         depth=args.depth,
         num_samples=args.num_samples,
@@ -69,7 +64,6 @@ def run(args):
 
     if torch.cuda.is_available():
         model = model.cuda()
-        g = g.to("cuda")
 
     optimizer = getattr(
         torch.optim,
@@ -94,69 +88,31 @@ def run(args):
     #     patience=args.patience,
     # )
 
-    from rum.utils import EarlyStopping
-    early_stopping = EarlyStopping(patience=args.patience)
+    # from rum.utils import EarlyStopping
+    # early_stopping = EarlyStopping(patience=args.patience)
 
-    acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
-        optimizer.zero_grad()
-        h, loss = model(g, g.ndata["feat"])
-        h = h.mean(0).log()
-
-        loss = loss + torch.nn.NLLLoss()(
-            h[g.ndata["train_mask"]], 
-            g.ndata["label"][g.ndata["train_mask"]],
-        ) 
-        loss.backward()
-        optimizer.step()
-        
-
-        with torch.no_grad():
-            h, _ = model(g, g.ndata["feat"])
+        for _, g, y in data_train:
+            if torch.cuda.is_available():
+                g = g.to("cuda")
+                y = y.to("cuda")
+            optimizer.zero_grad()
+            h, loss = model(g, g.ndata["h0"])
             h = h.mean(0)
-            acc_tr = (
-                h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
-            ).float().mean().item()
-            acc_vl = (
-                h.argmax(-1)[g.ndata["val_mask"]] == g.ndata["label"][g.ndata["val_mask"]]
-            ).float().mean().item()
-            acc_te = (
-                h.argmax(-1)[g.ndata["test_mask"]] == g.ndata["label"][g.ndata["test_mask"]]
-            ).float().mean().item()
-
-            if __name__ == "__main__":
-                print(
-                    f"Epoch: {idx+1:03d}, "
-                    f"Loss: {loss.item():.4f}, "
-                    f"Train Acc: {acc_tr:.4f}, "
-                    f"Val Acc: {acc_vl:.4f}, "
-                    f"Test Acc: {acc_te:.4f}"
-                )
-
-            # scheduler.step(acc_vl)
-
-            # if optimizer.param_groups[0]["lr"] < 1e-6:
-            #     break
-
-            if acc_vl > acc_vl_max:
-                acc_vl_max = acc_vl
-                acc_te_max = acc_te
-                
-            if early_stopping([-acc_vl]):
-                break
-    
-    print(acc_vl_max, acc_te_max, flush=True)
-    return acc_vl_max, acc_te_max
+            loss = loss + torch.nn.functional.mse_loss(h, y)
+            loss.backward()
+            print(loss)
+            optimizer.step()
         
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, default="CoraGraphDataset")
+    parser.add_argument("--data", type=str, default="ESOL")
     parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=8)
-    parser.add_argument("--length", type=int, default=8)
+    parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
@@ -173,5 +129,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)

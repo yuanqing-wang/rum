@@ -1,5 +1,6 @@
 from typing import Callable
 import torch
+import dgl
 from .layers import RUMLayer, Consistency
 
 class RUMModel(torch.nn.Module):
@@ -49,4 +50,28 @@ class RUMModel(torch.nn.Module):
             loss = loss + _loss
         return h, loss
 
-    
+class RUMGraphRegressionModel(RUMModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fc_out = torch.nn.Sequential(
+            torch.nn.Linear(self.hidden_features, self.hidden_features),
+            self.activation,
+            torch.nn.Linear(self.hidden_features, self.out_features),
+        )
+
+    def forward(self, g, h):
+        g = g.local_var()
+        h0 = h
+        h = self.fc_in(h)
+        loss = 0.0
+        for idx, layer in enumerate(self.layers):
+            if idx > 0:
+                h = h.mean(0)
+            h, _loss = layer(g, h, h0)
+            loss = loss + self.self_supervise_weight * _loss
+        h = h.swapaxes(0, 1)
+        g.ndata["h"] = h
+        h = dgl.mean_nodes(g, "h")
+        h = h.swapaxes(0, 1)
+        h = self.fc_out(h)
+        return h, loss
