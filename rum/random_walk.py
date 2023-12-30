@@ -22,9 +22,10 @@ def uniform_random_walk(g, num_samples, length):
     """
     nodes = g.nodes()
     nodes = nodes.repeat(num_samples)
-    walks, _ = dgl.sampling.random_walk(g=g, nodes=nodes, length=length-1)
+    walks, eids, _ = dgl.sampling.random_walk(g=g, nodes=nodes, length=length-1, return_eids=True)
     walks = walks.view(num_samples, g.number_of_nodes(), length)
-    return walks
+    eids = eids.view(num_samples, g.number_of_nodes(), length-1)
+    return walks, eids
 
 # @torch.jit.trace(example_inputs=(torch.zeros(10, 10, 10)))
 

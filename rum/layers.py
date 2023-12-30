@@ -16,14 +16,16 @@ class RUMLayer(torch.nn.Module):
             rnn: torch.nn.Module = GRU,
             random_walk: callable = uniform_random_walk,
             activation: callable = torch.nn.Identity(),
+            edge_features: int = 0,
             **kwargs
     ):
         super().__init__()
         # out_features = out_features // 2
-        self.rnn = rnn(in_features + 2 * out_features + 1, out_features, **kwargs)
+        self.fc = torch.nn.Linear(in_features + 2 * out_features + 1, out_features, bias=True)
+        self.rnn = rnn(out_features, out_features, **kwargs)
         self.rnn_walk = rnn(2, out_features, bidirectional=True, **kwargs)
-        # self.fc = torch.nn.Linear(length, length, bias=True)
-        # self.fc_self = torch.nn.Linear(in_features, out_features, bias=True)
+        if edge_features > 0:
+            self.fc_edge = torch.nn.Linear(edge_features, out_features, bias=True)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
@@ -33,7 +35,7 @@ class RUMLayer(torch.nn.Module):
         self.self_supervise = SelfSupervise(in_features, original_features)
         self.activation = activation
 
-    def forward(self, g, h, y0):
+    def forward(self, g, h, y0, e=None):
         """Forward pass.
 
         Parameters
@@ -49,7 +51,7 @@ class RUMLayer(torch.nn.Module):
         h : Tensor
             The output features.
         """
-        walks = self.random_walk(
+        walks, eids = self.random_walk(
             g=g, 
             num_samples=self.num_samples, 
             length=self.length,
@@ -73,14 +75,29 @@ class RUMLayer(torch.nn.Module):
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h_walk = h_walk.mean(0, keepdim=True)
         h = torch.cat([h, y_walk, degrees], dim=-1)
+        h = self.fc(h)
+        if e is not None:
+            _h = torch.empty(
+                *h.shape[:-2],
+                2 * h.shape[-2] - 1,
+                h.shape[-1],
+                device=h.device,
+                dtype=h.dtype,
+            )
+            _h[..., ::2, :] = h
+            _h[..., 1::2, :] = self.fc_edge(e)[eids]
+            h = _h
+
+        h = self.dropout(h)
         y, h = self.rnn(h, h_walk)
         if self.training:
+            if e is not None:
+                y = y[..., ::2, :]
             loss = self.self_supervise(y, y0[walks])
         else:
             loss = 0.0
         h = self.activation(h)
         h = h.mean(0)
-        h = self.dropout(h)
         return h, loss
     
 class Consistency(torch.nn.Module):
