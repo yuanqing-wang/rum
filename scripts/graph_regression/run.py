@@ -22,7 +22,7 @@ def get_graphs(data, batch_size):
     splitter = RandomSplitter()
     data_train, data_valid, data_test = splitter.train_val_test_split(
         data, frac_train=0.8, frac_val=0.1, frac_test=0.1, 
-        random_state=args.seed,
+        # random_state=args.seed,
     )
 
     _, g, y = next(iter(dgl.dataloading.GraphDataLoader(
@@ -37,6 +37,10 @@ def get_graphs(data, batch_size):
 
     data_valid = dgl.dataloading.GraphDataLoader(
         data_valid, batch_size=len(data_valid),
+    )
+
+    data_test = dgl.dataloading.GraphDataLoader(
+        data_test, batch_size=len(data_test),
     )
 
     return data_train, data_valid, data_test
@@ -88,9 +92,18 @@ def run(args):
     #     patience=args.patience,
     # )
 
-    # from rum.utils import EarlyStopping
-    # early_stopping = EarlyStopping(patience=args.patience)
-
+    from rum.utils import EarlyStopping
+    early_stopping = EarlyStopping(patience=args.patience)
+    _, g_vl, y_vl = next(iter(data_valid))
+    _, g_te, y_te = next(iter(data_test))
+    if torch.cuda.is_available():
+        g_vl = g_vl.to("cuda")
+        y_vl = y_vl.to("cuda")
+        g_te = g_te.to("cuda")
+        y_te = y_te.to("cuda")
+    
+    rmse_vl_min, rmse_te_min = np.inf, np.inf
+        
     for idx in range(args.n_epochs):
         for _, g, y in data_train:
             if torch.cuda.is_available():
@@ -101,9 +114,25 @@ def run(args):
             h = h.mean(0)
             loss = loss + torch.nn.functional.mse_loss(h, y)
             loss.backward()
-            print(loss)
             optimizer.step()
-        
+
+            with torch.no_grad():
+                h_vl, _ = model(g_vl, g_vl.ndata["h0"])
+                h_vl = h_vl.mean(0)
+                rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
+                if early_stopping([rmse_vl]):
+                    break
+
+                h_te, _ = model(g_te, g_te.ndata["h0"])
+                h_te = h_te.mean(0)
+                rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
+
+                if rmse_vl < rmse_vl_min:
+                    rmse_vl_min = rmse_vl
+                    rmse_te_min = rmse_te
+
+    print(rmse_vl_min, rmse_te_min, flush=True)
+    return rmse_vl_min, rmse_te_min
 
 if __name__ == "__main__":
     import argparse
@@ -112,7 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=8)
-    parser.add_argument("--length", type=int, default=4)
+    parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
@@ -129,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=-1)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)

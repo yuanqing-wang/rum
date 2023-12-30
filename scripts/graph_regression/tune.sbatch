@@ -7,7 +7,6 @@
 #SBATCH --ntasks-per-node=1
 
 
-# python tune.py --data CoauthorCSDataset 
-python tune.py --data CoraGraphDataset
-# python tune.py --data CiteseerGraphDataset
-# python tune.py --data PubmedGraphDataset
+# python tune.py --data ESOL
+# python tune.py --data FreeSolv
+python tune.py --data Lipophilicity

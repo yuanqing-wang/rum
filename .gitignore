@@ -169,3 +169,5 @@ cython_debug/
 *.swx
 *.swp
 *.bin
+*events.*
+*.validate_storage_marker

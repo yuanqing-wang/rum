@@ -34,7 +34,7 @@ def experiment(args):
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
         "n_epochs": 2000,  
-        "patience": 500,
+        "patience": 100,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
@@ -46,8 +46,8 @@ def experiment(args):
     tune_config = tune.TuneConfig(
         metric="acc_vl",
         mode="max",
-        search_alg=Repeater(HyperOptSearch(), 3),
-        num_samples=3000,
+        search_alg=Repeater(HyperOptSearch(), 1),
+        num_samples=9000,
     )
 
     if args.split_index < 0:

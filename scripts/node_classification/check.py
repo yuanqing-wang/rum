@@ -17,8 +17,33 @@ def check(args):
         except:
             pass
 
+    if "__trial_index__" in results[0]["config"]:
+        from collections import defaultdict
+        config_to_result = defaultdict(list)
+        for result in results:
+            config = result["config"]
+            config.pop("__trial_index__")
+            config.pop("checkpoint")
+            config_to_result[str(config)].append(
+                {"acc_vl": result["acc_vl"], "acc_te": result["acc_te"]}
+            )
+
+        results = []
+        for config, results_ in config_to_result.items():
+            acc_vl = 0
+            acc_te = 0
+            for result in results_:
+                acc_vl += result["acc_vl"]
+                acc_te += result["acc_te"]
+            acc_vl /= len(results_)
+            acc_te /= len(results_)
+            results.append({"config": config, "acc_vl": acc_vl, "acc_te": acc_te})
+        
     # print(results)
     results = sorted(results, key=lambda x: x["acc_vl"], reverse=True)
+
+
+    print(results[0])
     print(results[0]["acc_vl"], results[0]["acc_te"])
     print(results[0]["config"], flush=True)
 
