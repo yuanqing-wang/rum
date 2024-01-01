@@ -21,11 +21,11 @@ class RUMLayer(torch.nn.Module):
     ):
         super().__init__()
         # out_features = out_features // 2
-        self.fc = torch.nn.Linear(in_features + 2 * out_features + 1, out_features, bias=True)
-        self.rnn = rnn(out_features, out_features, **kwargs)
+        # self.fc = torch.nn.Linear(in_features + 2 * out_features + 1, out_features, bias=False)
+        self.rnn = rnn(in_features + 2 * out_features + 1, out_features, **kwargs)
         self.rnn_walk = rnn(2, out_features, bidirectional=True, **kwargs)
         if edge_features > 0:
-            self.fc_edge = torch.nn.Linear(edge_features, out_features, bias=True)
+            self.fc_edge = torch.nn.Linear(edge_features, in_features + 2 * out_features + 1, bias=False)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk
@@ -75,7 +75,8 @@ class RUMLayer(torch.nn.Module):
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h_walk = h_walk.mean(0, keepdim=True)
         h = torch.cat([h, y_walk, degrees], dim=-1)
-        h = self.fc(h)
+        # h = self.fc(h)
+        # h = self.activation(h)
         if e is not None:
             _h = torch.empty(
                 *h.shape[:-2],
@@ -88,7 +89,6 @@ class RUMLayer(torch.nn.Module):
             _h[..., 1::2, :] = self.fc_edge(e)[eids]
             h = _h
 
-        h = self.dropout(h)
         y, h = self.rnn(h, h_walk)
         if self.training:
             if e is not None:
@@ -97,6 +97,7 @@ class RUMLayer(torch.nn.Module):
         else:
             loss = 0.0
         h = self.activation(h)
+        h = self.dropout(h)
         h = h.mean(0)
         return h, loss
     

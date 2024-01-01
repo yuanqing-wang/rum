@@ -192,5 +192,6 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)
+    parser.add_argument("--directed", type=int, default=0)
     args = parser.parse_args()
     run(args)
