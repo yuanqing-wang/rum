@@ -5,12 +5,17 @@ from torch.utils.data import DataLoader
 
 def get_graphs(data, batch_size):
     dataset = DglGraphPropPredDataset(name=data)
+    for g in dataset.graphs:
+        g.ndata["feat"] = g.ndata["feat"].float()
+        g.edata["feat"] = g.edata["feat"].float()
+    dataset.labels = dataset.labels.float()
+
     split_idx = dataset.get_idx_split()
     if batch_size < 0:
         batch_size = len(split_idx["train"])
     train_loader = DataLoader(dataset[split_idx["train"]], batch_size=batch_size, shuffle=True, collate_fn=collate_dgl)
-    valid_loader = DataLoader(dataset[split_idx["valid"]], batch_size=len(split_idx["valid"]), shuffle=False, collate_fn=collate_dgl)
-    test_loader = DataLoader(dataset[split_idx["test"]], batch_size=len(split_idx["test"]), shuffle=False, collate_fn=collate_dgl)
+    valid_loader = DataLoader(dataset[split_idx["valid"]], batch_size=batch_size, shuffle=False, collate_fn=collate_dgl)
+    test_loader = DataLoader(dataset[split_idx["test"]], batch_size=batch_size, shuffle=False, collate_fn=collate_dgl)
     return train_loader, valid_loader, test_loader
 
 def run(args):
@@ -62,46 +67,41 @@ def run(args):
 
     from rum.utils import EarlyStopping
     early_stopping = EarlyStopping(patience=args.patience)
-    g_vl, y_vl = next(iter(data_valid))
-    g_te, y_te = next(iter(data_test))
-    if torch.cuda.is_available():
-        g_vl = g_vl.to("cuda")
-        y_vl = y_vl.to("cuda")
-        g_te = g_te.to("cuda")
-        y_te = y_te.to("cuda")
     
     acc_vl_max, acc_te_max = 0.0, 0.0
         
     for idx in range(args.n_epochs):
+        model.train()
         for g, y in data_train:
             if torch.cuda.is_available():
                 g = g.to("cuda")
                 y = y.to("cuda")
             optimizer.zero_grad()
-            h, loss = model(g, g.ndata["feat"].float())
+            h, loss = model(g, g.ndata["feat"])
             h = h.mean(0)
-            loss = loss + torch.nn.BCEWithLogitsLoss()(h, y)
+            loss = loss + torch.nn.BCEWithLogitsLoss(
+                pos_weight=(y.mean() + 1e-10).pow(-1),
+            )(h, y)
             loss.backward()
             optimizer.step()
 
-            with torch.no_grad():
-                h_vl, _ = model(g_vl, g_vl.ndata["feat"].float())
-                h_vl = h_vl.mean(0)
-                acc_vl = evaluator.eval({"y_true": y_vl, "y_pred": h_vl})
+        with torch.no_grad():
+            h_vl, y_vl = [], []
+            model.eval()
+            for g, y in data_valid:
+                if torch.cuda.is_available():
+                    g = g.to("cuda")
+                    y = y.to("cuda")
+                h, _ = model(g, g.ndata["feat"])
+                h_vl.append(h.mean(0))
+                y_vl.append(y)
+            h_vl, y_vl = torch.cat(h_vl), torch.cat(y_vl)
+            acc_vl = evaluator.eval({"y_true": y_vl, "y_pred": h_vl})["rocauc"]
+            print(acc_vl)
 
-                if early_stopping([-acc_vl]):
-                    break
 
-                h_te, _ = model(g_te, g_te.ndata["feat"].float())
-                h_te = h_te.mean(0)
-                acc_te = evaluator.eval({"y_true": y_te, "y_pred": h_te})
-
-                if acc_vl > acc_vl_max:
-                    acc_vl_max = acc_vl
-                    acc_te_max = acc_te
-
-    print(acc_vl_max, acc_te_max, flush=True)
-    return acc_vl_max, acc_te_max
+    # print(acc_vl_max, acc_te_max, flush=True)
+    # return acc_vl_max, acc_te_max
 
 if __name__ == "__main__":
     import argparse
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)
-    parser.add_argument("--batch_size", type=int, default=-1)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)
