@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import torch
 import dgl
@@ -50,6 +51,17 @@ def get_graph(data):
 def run(args):
     g = get_graph(args.data)
 
+    if args.directed:
+        _g = g
+        g = dgl.to_bidirected(g, copy_ndata=True)
+        src, dst = g.edges()
+        has_fwd_edge = _g.has_edges_between(src.flatten(), dst.flatten()) * 1.0
+        has_bwd_edge = _g.has_edges_between(dst.flatten(), src.flatten()) * 1.0
+        has_edge = has_fwd_edge - has_bwd_edge
+        e = has_edge.unsqueeze(-1)
+    else:
+        e = None
+
     if args.split_index >= 0:
         g.ndata["train_mask"] = g.ndata["train_mask"][:, args.split_index]
         g.ndata["val_mask"] = g.ndata["val_mask"][:, args.split_index]
@@ -70,11 +82,14 @@ def run(args):
         self_supervise_weight=args.self_supervise_weight,
         consistency_weight=args.consistency_weight,
         activation=getattr(torch.nn, args.activation)(),
+        edge_features=e.shape[-1] if e is not None else 0,
     )
 
     if torch.cuda.is_available():
         model = model.cuda()
         g = g.to("cuda")
+        if e is not None:
+            e = e.cuda()
 
     optimizer = getattr(
         torch.optim,
@@ -105,9 +120,8 @@ def run(args):
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
         optimizer.zero_grad()
-        h, loss = model(g, g.ndata["feat"])
+        h, loss = model(g, g.ndata["feat"], e=e)
         h = h.mean(0).log()
-
         loss = loss + torch.nn.NLLLoss()(
             h[g.ndata["train_mask"]], 
             g.ndata["label"][g.ndata["train_mask"]],
@@ -117,7 +131,7 @@ def run(args):
         
 
         with torch.no_grad():
-            h, _ = model(g, g.ndata["feat"])
+            h, _ = model(g, g.ndata["feat"], e=e)
             h = h.mean(0)
             acc_tr = (
                 h.argmax(-1)[g.ndata["train_mask"]] == g.ndata["label"][g.ndata["train_mask"]]
@@ -158,7 +172,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden_features", type=int, default=64)
+    parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=8)
     parser.add_argument("--length", type=int, default=8)
@@ -178,5 +192,6 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)
+    parser.add_argument("--directed", type=int, default=0)
     args = parser.parse_args()
     run(args)

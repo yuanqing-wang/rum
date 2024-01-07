@@ -31,7 +31,7 @@ class RUMModel(torch.nn.Module):
         self.self_supervise_weight = self_supervise_weight
         self.consistency_weight = consistency_weight
 
-    def forward(self, g, h, consistency_weight=None):
+    def forward(self, g, h, e=None, consistency_weight=None):
         g = g.local_var()
         if consistency_weight is None:
             consistency_weight = self.consistency_weight
@@ -41,7 +41,7 @@ class RUMModel(torch.nn.Module):
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h, _loss = layer(g, h, h0)
+            h, _loss = layer(g, h, h0, e=e)
             loss = loss + self.self_supervise_weight * _loss
         h = self.fc_out(h).softmax(-1)
         if self.training:
@@ -59,7 +59,7 @@ class RUMGraphRegressionModel(RUMModel):
             torch.nn.Linear(self.hidden_features, self.out_features),
         )
 
-    def forward(self, g, h):
+    def forward(self, g, h, e=None):
         g = g.local_var()
         h0 = h
         h = self.fc_in(h)
@@ -67,7 +67,7 @@ class RUMGraphRegressionModel(RUMModel):
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h, _loss = layer(g, h, h0)
+            h, _loss = layer(g, h, h0, e=e)
             loss = loss + self.self_supervise_weight * _loss
         h = h.swapaxes(0, 1)
         g.ndata["h"] = h
