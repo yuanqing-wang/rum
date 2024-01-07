@@ -24,7 +24,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
     param_space = {
         "data": args.data,
-        "hidden_features": tune.randint(32, 128),
+        "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
         "length": tune.randint(3, 16),
@@ -34,7 +34,7 @@ def experiment(args):
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
         "n_epochs": 2000,  
-        "patience": 100,
+        "patience": 500,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),

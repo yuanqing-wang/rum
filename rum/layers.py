@@ -97,8 +97,8 @@ class RUMLayer(torch.nn.Module):
         else:
             loss = 0.0
         h = self.activation(h)
-        h = self.dropout(h)
         h = h.mean(0)
+        h = self.dropout(h)
         return h, loss
     
 class Consistency(torch.nn.Module):
