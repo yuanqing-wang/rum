@@ -11,8 +11,8 @@
 # python tune.py --data CoauthorCSDataset 
 # python tune.py --data CoauthorPhysicsDataset
 # python tune.py --data AmazonCoBuyComputerDataset
-python tune.py --data AmazonCoBuyPhotoDataset
+# python tune.py --data AmazonCoBuyPhotoDataset
 
 # python tune.py --data CoraGraphDataset
-# python tune.py --data CiteseerGraphDataset
+python tune.py --data CiteseerGraphDataset
 # python tune.py --data PubmedGraphDataset
