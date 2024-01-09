@@ -20,9 +20,15 @@ def uniform_random_walk(g, num_samples, length):
     walks : Tensor
         The random walks.
     """
-    nodes = g.nodes()
+    g = g.local_var()
+    nodes = g.nodes().cpu()
     nodes = nodes.repeat(num_samples)
-    walks, eids, _ = dgl.sampling.random_walk(g=g, nodes=nodes, length=length-1, return_eids=True)
+    g = g.to("cpu")
+    walks, eids, _ = dgl.sampling.node2vec_random_walk(
+        g=g, nodes=nodes, 
+        p=0.0, q=1.0,
+        walk_length=length-1, return_eids=True, 
+    )
     walks = walks.view(num_samples, g.number_of_nodes(), length)
     eids = eids.view(num_samples, g.number_of_nodes(), length-1)
     return walks, eids
