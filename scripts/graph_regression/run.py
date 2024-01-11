@@ -128,7 +128,7 @@ def run(args):
                 h_te = h_te.mean(0)
                 rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
 
-                print(rmse_vl, rmse_te)
+                # print(rmse_vl, rmse_te)
 
                 if rmse_vl < rmse_vl_min:
                     rmse_vl_min = rmse_vl
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=10000)
+    parser.add_argument("--n_epochs", type=int, default=50)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--activation", type=str, default="ELU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
-    parser.add_argument("--patience", type=int, default=500)
+    parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=-1)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()

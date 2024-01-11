@@ -5,7 +5,7 @@ from run import run
 import ray
 from ray import tune, air, train
 from ray.tune.trainable import session
-from ray.tune.search.hyperopt import HyperOptSearch
+from ray.tune.search.ax import AxSearch
 from ray.tune.search import Repeater
 import torch
 num_gpus = torch.cuda.device_count()
@@ -33,8 +33,8 @@ def experiment(args):
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 2000,  
-        "patience": 100,
+        "n_epochs": 100,  
+        "patience": 10,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
@@ -47,7 +47,7 @@ def experiment(args):
     tune_config = tune.TuneConfig(
         metric="rmse_vl",
         mode="min",
-        search_alg=Repeater(HyperOptSearch(), 3),
+        search_alg=Repeater(AxSearch(), 3),
         num_samples=3000,
     )
 
