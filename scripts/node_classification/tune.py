@@ -49,7 +49,7 @@ def experiment(args):
         metric="acc_vl",
         mode="max",
         search_alg=Repeater(AxSearch(), 3),
-        num_samples=9000,
+        num_samples=3000,
     )
 
     if args.split_index < 0:
