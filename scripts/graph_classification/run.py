@@ -22,6 +22,9 @@ def run(args):
     data_train, data_valid, data_test = get_graphs(args.data, args.batch_size)
     g, y = next(iter(data_train))
 
+    y_mean = torch.cat([y.mean(0) for g, y in data_train]).mean(0)
+    pos_weight = y_mean.pow(-1)
+    print(pos_weight, flush=True)
     from rum.models import RUMGraphRegressionModel
     model = RUMGraphRegressionModel(
         in_features=g.ndata["feat"].shape[-1],
@@ -80,7 +83,7 @@ def run(args):
             h, loss = model(g, g.ndata["feat"])
             h = h.mean(0)
             loss = loss + torch.nn.BCEWithLogitsLoss(
-                pos_weight=(y.mean() + 1e-10).pow(-1),
+                pos_weight=pos_weight,
             )(h, y)
             loss.backward()
             optimizer.step()
@@ -95,9 +98,28 @@ def run(args):
                 h, _ = model(g, g.ndata["feat"])
                 h_vl.append(h.mean(0))
                 y_vl.append(y)
+
             h_vl, y_vl = torch.cat(h_vl), torch.cat(y_vl)
             acc_vl = evaluator.eval({"y_true": y_vl, "y_pred": h_vl})["rocauc"]
-            print(acc_vl)
+
+            if acc_vl > acc_vl_max:
+                acc_vl_max = acc_vl
+                h_te, y_te = [], []
+                for g, y in data_test:
+                    if torch.cuda.is_available():
+                        g = g.to("cuda")
+                        y = y.to("cuda")
+                    h, _ = model(g, g.ndata["feat"])
+                    h_te.append(h.mean(0))
+                    y_te.append(y)
+                h_te, y_te = torch.cat(h_te), torch.cat(y_te)
+                acc_te = evaluator.eval({"y_true": y_te, "y_pred": h_te})["rocauc"]
+                acc_te_max = acc_te
+                print(acc_vl_max, acc_te_max, flush=True)
+
+            if early_stopping([-acc_vl]):
+                break
+    return acc_vl_max, acc_te_max
 
 
     # print(acc_vl_max, acc_te_max, flush=True)
@@ -112,13 +134,13 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=8)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--learning_rate", type=float, default=1e-2)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
     parser.add_argument("--n_epochs", type=int, default=10000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
+    parser.add_argument("--self_supervise_weight", type=float, default=1e-5)
     parser.add_argument("--consistency_weight", type=float, default=1)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
@@ -126,8 +148,8 @@ if __name__ == "__main__":
     parser.add_argument("--activation", type=str, default="ELU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
-    parser.add_argument("--patience", type=int, default=500)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--patience", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)

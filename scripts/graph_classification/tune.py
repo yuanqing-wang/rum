@@ -17,8 +17,8 @@ def objective(config):
     checkpoint = os.path.join(os.getcwd(), "model.pt")
     config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
-    rmse_vl, rmse_te = run(args)
-    ray.train.report(dict(rmse_vl=rmse_vl, rmse_te=rmse_te))
+    acc_vl, acc_te = run(args)
+    ray.train.report(dict(acc_vl=acc_vl, acc_te=acc_te))
 
 def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
@@ -33,22 +33,21 @@ def experiment(args):
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 100,  
-        "patience": 10,
+        "n_epochs": 2000,  
+        "patience": 100,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
-        "batch_size": tune.randint(32, 128),
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
-        "split_index": args.split_index,
+        "batch_size": tune.randint(32, 128),
     }
 
     tune_config = tune.TuneConfig(
-        metric="rmse_vl",
-        mode="min",
-        search_alg=Repeater(HyperOptSearch(), 3),
-        num_samples=3000,
+        metric="acc_vl",
+        mode="max",
+        search_alg=Repeater(HyperOptSearch(), 1),
+        num_samples=9000,
     )
 
     if args.split_index < 0:
@@ -74,7 +73,7 @@ def experiment(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, default="ESOL")
+    parser.add_argument("--data", type=str, default="ogbg-molhiv")
     parser.add_argument("--split_index", type=int, default=-1)
     args = parser.parse_args()
     experiment(args)
