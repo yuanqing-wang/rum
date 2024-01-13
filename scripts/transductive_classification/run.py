@@ -7,9 +7,9 @@ import torch
 import dgl
 # from ogb.nodeproppred import DglNodePropPredDataset
 dgl.use_libxsmm(False)
-from sklearn.metrics import f1_score
+from torcheval.metrics.functional import binary_f1_score
 from functools import partial
-f1_score = partial(f1_score, average="micro")
+f1_score = partial(binary_f1_score, threshold=0.5)
 
 def get_graph(data, batch_size):
     from dgl.data import (
@@ -110,8 +110,8 @@ def run(args):
             h, _ = model(g, g.ndata["feat"])
             h = h.mean(0)
             acc_tr = f1_score(
-                (h.cpu().flatten() > 0) * 1,
-                g.ndata["label"].cpu().flatten().int(),
+                h.sigmoid().flatten(),
+                g.ndata["label"].flatten(),
             )
 
             g = next(iter(data_valid))
@@ -120,8 +120,8 @@ def run(args):
             h, _ = model(g, g.ndata["feat"])
             h = h.mean(0)
             acc_vl = f1_score(
-                (h.cpu().flatten() > 0) * 1,
-                g.ndata["label"].cpu().flatten().int(),
+                h.sigmoid().flatten(),
+                g.ndata["label"].flatten(),
             )
 
             g = next(iter(data_test))
@@ -130,8 +130,8 @@ def run(args):
             h, _ = model(g, g.ndata["feat"])
             h = h.mean(0)
             acc_te = f1_score(
-                (h.cpu().flatten() > 0) * 1,
-                g.ndata["label"].cpu().flatten().int(),
+                h.sigmoid().flatten(),
+                g.ndata["label"].flatten(),
             )
 
             if __name__ == "__main__":
