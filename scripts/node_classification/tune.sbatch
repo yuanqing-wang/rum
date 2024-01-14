@@ -17,4 +17,5 @@
 # python tune.py --data CiteseerGraphDataset
 # python tune.py --data PubmedGraphDataset
 
-python tune.py --data CornellDataset --split_index $IDX --directed 1
+# python tune.py --data CornellDataset --split_index $IDX --directed 1
+python tune.py --data ArxivDataset
