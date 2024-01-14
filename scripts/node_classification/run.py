@@ -18,7 +18,9 @@ def get_graph(data):
         TexasDataset,
     )
 
-    g = locals()[data](verbose=False)[0]
+    from utils import Arxiv
+
+    g = locals()[data]()[0]
     g = dgl.remove_self_loop(g)
 
     if "train_mask" not in g.ndata:
@@ -183,8 +185,8 @@ if __name__ == "__main__":
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
-    parser.add_argument("--consistency_weight", type=float, default=1)
+    parser.add_argument("--self_supervise_weight", type=float, default=1e-5)
+    parser.add_argument("--consistency_weight", type=float, default=1e-5)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
