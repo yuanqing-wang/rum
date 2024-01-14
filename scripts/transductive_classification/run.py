@@ -41,7 +41,8 @@ def get_graph(data, batch_size):
 def run(args):
     data_train, data_valid, data_test = get_graph(args.data, args.batch_size)
     g = next(iter(data_train))
-    pos_weight = torch.cat([g.ndata["label"].flatten() for g in data_train]).mean().pow(-1)
+    y = torch.cat([g.ndata["label"].flatten() for g in data_train])
+    pos_weight = ( y==0 ).sum() / (y == 1).sum()
 
     from rum.models import RUMModel
 
@@ -56,7 +57,7 @@ def run(args):
         dropout=args.dropout,
         num_layers=1,
         self_supervise_weight=args.self_supervise_weight,
-        consistency_weight=args.consistency_weight,
+        consistency_weight=0.0,
         activation=getattr(torch.nn, args.activation)(),
         final_activation=torch.nn.Identity(),
     )
@@ -98,8 +99,9 @@ def run(args):
                 g = g.to("cuda")
             optimizer.zero_grad()
             h, loss = model(g, g.ndata["feat"])
+            h = h.sigmoid()
             h = h.mean(0)
-            loss = loss + torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)(
+            loss = loss + torch.nn.BCELoss()(
                 h, 
                 g.ndata["label"],
             ) 
@@ -108,9 +110,9 @@ def run(args):
     
         with torch.no_grad():
             h, _ = model(g, g.ndata["feat"])
-            h = h.mean(0)
+            h = h.sigmoid().mean(0)
             acc_tr = f1_score(
-                h.sigmoid().flatten(),
+                h.flatten(),
                 g.ndata["label"].flatten(),
             )
 
@@ -118,9 +120,9 @@ def run(args):
             if torch.cuda.is_available():
                 g = g.to("cuda")
             h, _ = model(g, g.ndata["feat"])
-            h = h.mean(0)
+            h = h.sigmoid().mean(0)
             acc_vl = f1_score(
-                h.sigmoid().flatten(),
+                h.flatten(),
                 g.ndata["label"].flatten(),
             )
 
@@ -128,9 +130,9 @@ def run(args):
             if torch.cuda.is_available():
                 g = g.to("cuda")
             h, _ = model(g, g.ndata["feat"])
-            h = h.mean(0)
+            h = h.sigmoid().mean(0)
             acc_te = f1_score(
-                h.sigmoid().flatten(),
+                h.flatten(),
                 g.ndata["label"].flatten(),
             )
 
@@ -152,8 +154,8 @@ def run(args):
                 acc_vl_max = acc_vl
                 acc_te_max = acc_te
                 
-            if early_stopping([-acc_vl]):
-                break
+            # if early_stopping([-acc_vl]):
+            #     break
     
     print(acc_vl_max, acc_te_max, flush=True)
     return acc_vl_max, acc_te_max
@@ -163,21 +165,21 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="PPIDataset")
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num_samples", type=int, default=8)
+    parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
+    parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=10000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1e-5)
+    parser.add_argument("--self_supervise_weight", type=float, default=0.0)
     parser.add_argument("--consistency_weight", type=float, default=1)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
-    parser.add_argument("--dropout", type=float, default=0.5)
+    parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="ELU")
     parser.add_argument("--checkpoint", type=str, default="")
