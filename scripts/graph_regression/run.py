@@ -10,20 +10,28 @@ def get_graphs(data, batch_size):
         FreeSolv,
         Lipophilicity,
     )
-    from dgllife.utils import (
-        CanonicalAtomFeaturizer,
-        CanonicalBondFeaturizer,
-    )
-    data = locals()[data](
-        node_featurizer=CanonicalAtomFeaturizer("h0"),
-        edge_featurizer=CanonicalBondFeaturizer("e0"),
-    )
-    from dgllife.utils import RandomSplitter
-    splitter = RandomSplitter()
-    data_train, data_valid, data_test = splitter.train_val_test_split(
-        data, frac_train=0.8, frac_val=0.1, frac_test=0.1, 
-        # random_state=args.seed,
-    )
+    from dgl.data import ZINCDataset
+
+    if "ZINC" in data:
+        data_train = ZINCDataset(mode="train")
+        data_valid = ZINCDataset(mode="valid")
+        data_test = ZINCDataset(mode="test")
+
+    else:
+        from dgllife.utils import (
+            CanonicalAtomFeaturizer,
+            CanonicalBondFeaturizer,
+        )
+        data = locals()[data](
+            node_featurizer=CanonicalAtomFeaturizer("h0"),
+            edge_featurizer=CanonicalBondFeaturizer("e0"),
+        )
+        from dgllife.utils import RandomSplitter
+        splitter = RandomSplitter()
+        data_train, data_valid, data_test = splitter.train_val_test_split(
+            data, frac_train=0.8, frac_val=0.1, frac_test=0.1, 
+            # random_state=args.seed,
+        )
 
     _, g, y = next(iter(dgl.dataloading.GraphDataLoader(
         data_train, batch_size=len(data_train),
