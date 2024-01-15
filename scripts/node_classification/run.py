@@ -18,7 +18,7 @@ def get_graph(data):
         TexasDataset,
     )
 
-    from utils import Arxiv
+    from utils import ArxivDataset
 
     g = locals()[data]()[0]
     g = dgl.remove_self_loop(g)

@@ -1,9 +1,9 @@
 import os
 import glob
 import json
-import pandas as pd
 import torch
 import dgl
+import pandas as pd
 
 def check(args):
     results = []

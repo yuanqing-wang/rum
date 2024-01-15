@@ -27,7 +27,7 @@ def experiment(args):
         "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
-        "length": tune.randint(3, 8),
+        "length": 4,
         "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,

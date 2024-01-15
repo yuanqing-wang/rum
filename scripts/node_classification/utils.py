@@ -15,7 +15,7 @@ def OGBDataset(name):
     g.ndata['label'] = y.squeeze()
     return [g]
 
-Arxiv = partial(OGBDataset, name='ogbn-arxiv')
+ArxivDataset = partial(OGBDataset, name='ogbn-arxiv')
 
 
 
