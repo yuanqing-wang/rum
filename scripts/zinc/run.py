@@ -6,6 +6,7 @@ dgl.use_libxsmm(False)
 
 def transform(g):
     # g = dgl.to_bidirected(g)
+    g = g.local_var()
     g.ndata["feat"] = torch.nn.functional.one_hot(g.ndata["feat"].long(), num_classes=28).float()
     g.edata["feat"] = torch.nn.functional.one_hot(g.edata["feat"].long(), num_classes=4).float()
     return g
@@ -18,13 +19,9 @@ def get_graphs(batch_size):
     data_test = ZINCDataset(mode="test", transform=transform)
 
     batch_size = batch_size if batch_size > 0 else len(data_train)
-    for g, y in data_train:
-        print(g.ndata["feat"].shape)
     data_train = dgl.dataloading.GraphDataLoader(
         data_train, batch_size=batch_size, shuffle=True, drop_last=True
     )
-
-
 
     data_valid = dgl.dataloading.GraphDataLoader(
         data_valid, batch_size=len(data_valid),
@@ -40,7 +37,6 @@ def get_graphs(batch_size):
 def run(args):
     data_train, data_valid, data_test = get_graphs(args.batch_size)
     g, y = next(iter(data_train))
-
 
     from rum.models import RUMGraphRegressionModel
     model = RUMGraphRegressionModel(
@@ -112,22 +108,22 @@ def run(args):
             loss.backward()
             optimizer.step()
 
-            with torch.no_grad():
-                h_vl, _ = model(g_vl, g_vl.ndata["feat"].float(), e=g_vl.edata["feat"].float())
-                h_vl = h_vl.mean(0)
-                rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
-                if early_stopping([rmse_vl]):
-                    break
+        with torch.no_grad():
+            h_vl, _ = model(g_vl, g_vl.ndata["feat"].float(), e=g_vl.edata["feat"].float())
+            h_vl = h_vl.mean(0)
+            rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
+            if early_stopping([rmse_vl]):
+                break
 
-                h_te, _ = model(g_te, g_te.ndata["feat"].float(), e=g_te.edata["feat"].float())
-                h_te = h_te.mean(0)
-                rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
+            h_te, _ = model(g_te, g_te.ndata["feat"].float(), e=g_te.edata["feat"].float())
+            h_te = h_te.mean(0)
+            rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
 
-                # print(rmse_vl, rmse_te)
+            print(rmse_vl, rmse_te)
 
-                if rmse_vl < rmse_vl_min:
-                    rmse_vl_min = rmse_vl
-                    rmse_te_min = rmse_te
+            if rmse_vl < rmse_vl_min:
+                rmse_vl_min = rmse_vl
+                rmse_te_min = rmse_te
 
     print(rmse_vl_min, rmse_te_min, flush=True)
     return rmse_vl_min, rmse_te_min
@@ -136,27 +132,27 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="ESOL")
-    parser.add_argument("--hidden_features", type=int, default=64)
+    parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=8)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--learning_rate", type=float, default=1e-2)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=50)
+    parser.add_argument("--n_epochs", type=int, default=1000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
-    parser.add_argument("--consistency_weight", type=float, default=1)
+    parser.add_argument("--self_supervise_weight", type=float, default=1e-3)
+    parser.add_argument("--consistency_weight", type=float, default=1e-3)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="ELU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
-    parser.add_argument("--patience", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=-1)
+    parser.add_argument("--patience", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)
