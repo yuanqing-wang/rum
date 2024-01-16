@@ -33,7 +33,7 @@ def experiment(args):
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 200,  
+        "n_epochs": 500,  
         "patience": 10,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
@@ -47,7 +47,7 @@ def experiment(args):
         metric="acc_vl",
         mode="max",
         search_alg=Repeater(HyperOptSearch(), 1),
-        num_samples=9000,
+        num_samples=3000,
     )
 
     if args.split_index < 0:
