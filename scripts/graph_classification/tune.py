@@ -24,7 +24,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
     param_space = {
         "data": args.data,
-        "hidden_features": tune.randint(32, 64),
+        "hidden_features": tune.randint(32, 256),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
         "length": tune.randint(3, 16),
