@@ -119,7 +119,7 @@ def run(args):
             h_te = h_te.mean(0)
             rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
 
-            print(rmse_vl, rmse_te)
+            print(rmse_vl, rmse_te, flush=True)
 
             if rmse_vl < rmse_vl_min:
                 rmse_vl_min = rmse_vl
@@ -132,21 +132,21 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="ESOL")
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=128)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num_samples", type=int, default=8)
+    parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=1000)
+    parser.add_argument("--learning_rate", type=float, default=1e-5)
+    parser.add_argument("--weight_decay", type=float, default=1e-10)
+    parser.add_argument("--n_epochs", type=int, default=2000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=1e-3)
     parser.add_argument("--consistency_weight", type=float, default=1e-3)
-    parser.add_argument("--consistency_temperature", type=float, default=0.5)
-    parser.add_argument("--dropout", type=float, default=0.5)
+    parser.add_argument("--consistency_temperature", type=float, default=0.1)
+    parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="ELU")
     parser.add_argument("--checkpoint", type=str, default="")
