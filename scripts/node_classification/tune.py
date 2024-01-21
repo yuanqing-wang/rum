@@ -34,20 +34,21 @@ def experiment(args):
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
         "n_epochs": 2000,  
-        "patience": 100,
+        "patience": 500,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
         "split_index": args.split_index,
+        "directed": args.directed,
     }
 
     tune_config = tune.TuneConfig(
         metric="acc_vl",
         mode="max",
-        search_alg=Repeater(AxSearch(), 1),
-        num_samples=9000,
+        search_alg=Repeater(AxSearch(), 3),
+        num_samples=3000,
     )
 
     if args.split_index < 0:
@@ -74,6 +75,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
+    parser.add_argument("--directed", type=int, default=0)
     parser.add_argument("--split_index", type=int, default=-1)
     args = parser.parse_args()
     experiment(args)
