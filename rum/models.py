@@ -71,7 +71,7 @@ class RUMGraphRegressionModel(RUMModel):
             loss = loss + self.self_supervise_weight * _loss
         h = h.swapaxes(0, 1)
         g.ndata["h"] = h
-        h = dgl.mean_nodes(g, "h")
+        h = dgl.sum_nodes(g, "h")
         h = h.swapaxes(0, 1)
         h = self.fc_out(h)
         return h, loss

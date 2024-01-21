@@ -5,9 +5,7 @@
 #SBATCH --output=%A.out
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --partition nvidia
 
-
-python tune.py --data ESOL
-# python tune.py --data FreeSolv
 python tune.py --data ogbg-molhiv
-
