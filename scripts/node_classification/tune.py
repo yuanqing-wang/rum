@@ -5,7 +5,7 @@ from run import run
 import ray
 from ray import tune, air, train
 from ray.tune.trainable import session
-from ray.tune.search.hyperopt import HyperOptSearch
+from ray.tune.search.ax import AxSearch
 from ray.tune.search import Repeater
 import torch
 num_gpus = torch.cuda.device_count()
@@ -46,7 +46,7 @@ def experiment(args):
     tune_config = tune.TuneConfig(
         metric="acc_vl",
         mode="max",
-        search_alg=Repeater(HyperOptSearch(), 1),
+        search_alg=Repeater(AxSearch(), 1),
         num_samples=9000,
     )
 

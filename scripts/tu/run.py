@@ -115,10 +115,10 @@ def run(args):
         acc_te = _run(args, data_train, data_valid)
         accs.append(acc_te)
     accs = np.stack(accs)
+    accs_std = np.std(accs, axis=0)
     accs = np.mean(accs, axis=0)
-    accs = np.max(accs)
-    print(accs)
-    return accs
+    accs, accs_std = np.max(accs), accs_std[np.argmax(accs)]
+    return accs, accs_std
 
 if __name__ == "__main__":
     import argparse
