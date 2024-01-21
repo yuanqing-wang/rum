@@ -112,8 +112,8 @@ def run(args):
             h_vl, _ = model(g_vl, g_vl.ndata["feat"].float(), e=g_vl.edata["feat"].float())
             h_vl = h_vl.mean(0)
             rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
-            if early_stopping([rmse_vl]):
-                break
+            # if early_stopping([rmse_vl]):
+            #     break
 
             h_te, _ = model(g_te, g_te.ndata["feat"].float(), e=g_te.edata["feat"].float())
             h_te = h_te.mean(0)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-5)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
-    parser.add_argument("--n_epochs", type=int, default=2000)
+    parser.add_argument("--n_epochs", type=int, default=20000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
