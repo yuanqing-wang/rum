@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import torch
 import dgl
+from statistics import mean, stdev
 
 def check(args):
     results = []
@@ -30,22 +31,24 @@ def check(args):
 
         results = []
         for config, results_ in config_to_result.items():
-            acc_vl = 0
-            acc_te = 0
+            acc_vl = []
+            acc_te = []
             for result in results_:
-                acc_vl += result["acc_vl"]
-                acc_te += result["acc_te"]
-            acc_vl /= len(results_)
-            acc_te /= len(results_)
-            results.append({"config": config, "acc_vl": acc_vl, "acc_te": acc_te})
+                acc_vl.append(result["acc_vl"])
+                acc_te.append(result["acc_te"])
+            if len(acc_te) == 1:
+                acc_te_std = 0
+            else:
+                acc_te_std = stdev(acc_te)
+            acc_vl = mean(acc_vl)
+            acc_te = mean(acc_te)    
+            results.append({"config": config, "acc_vl": acc_vl, "acc_te": acc_te, "acc_te_std": acc_te_std})
         
     # print(results)
     results = sorted(results, key=lambda x: x["acc_vl"], reverse=True)
 
 
     print(results[0])
-    print(results[0]["acc_vl"], results[0]["acc_te"])
-    print(results[0]["config"], flush=True)
 
     if len(args.report) > 1:
         df = pd.DataFrame([result["config"] for result in results])
