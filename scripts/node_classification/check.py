@@ -1,9 +1,10 @@
 import os
 import glob
 import json
+import dgl
 import pandas as pd
 import torch
-import dgl
+
 from statistics import mean, stdev
 
 def check(args):
