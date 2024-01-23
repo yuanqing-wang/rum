@@ -17,24 +17,24 @@ def check(args):
         except:
             pass
 
-    if "__trial_index__" in results[0]["config"]:
-        from collections import defaultdict
-        config_to_result = defaultdict(list)
-        for result in results:
-            config = result["config"]
-            config.pop("__trial_index__")
-            config.pop("checkpoint")
-            config_to_result[str(config)].append(
-                {"acc": result["acc"]}
-            )
+    # if "__trial_index__" in results[0]["config"]:
+    #     from collections import defaultdict
+    #     config_to_result = defaultdict(list)
+    #     for result in results:
+    #         config = result["config"]
+    #         config.pop("__trial_index__")
+    #         config.pop("checkpoint")
+    #         config_to_result[str(config)].append(
+    #             {"acc": result["acc"]}
+    #         )
 
-        results = []
-        for config, results_ in config_to_result.items():
-            acc = 0
-            for result in results_:
-                acc += result["acc"]
-            acc /= len(results_)
-            results.append({"config": config, "acc": acc})
+    #     results = []
+    #     for config, results_ in config_to_result.items():
+    #         acc = 0
+    #         for result in results_:
+    #             acc += result["acc"]
+    #         acc /= len(results_)
+    #         results.append({"config": config, "acc": acc})
         
     # print(results)
     results = sorted(results, key=lambda x: x["acc"], reverse=True)

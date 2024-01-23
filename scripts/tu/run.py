@@ -64,7 +64,6 @@ def _run(args, data_train, data_valid):
                 y = y.to("cuda")
             optimizer.zero_grad()
             h, loss = model(g, g.ndata["attr"])
-            h = h.mean(0)
             loss = loss + torch.nn.BCEWithLogitsLoss(
                 pos_weight=pos_weight,
             )(h, y)
@@ -79,12 +78,11 @@ def _run(args, data_train, data_valid):
                     g = g.to("cuda")
                     y = y.to("cuda")
                 h, _ = model(g, g.ndata["attr"])
-                h_vl.append(h.mean(0))
+                h_vl.append(h)
                 y_vl.append(y)
 
             h_vl, y_vl = torch.cat(h_vl), torch.cat(y_vl)
             acc = ((h_vl.sigmoid() - y_vl).abs() < 0.5).float().mean().item()
-
             accs.append(acc)
             if early_stopping([-acc]):
                 break

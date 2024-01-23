@@ -33,7 +33,7 @@ def experiment(args):
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 8,
-        "n_epochs": 200,  
+        "n_epochs": 500,  
         "patience": 50,
         "self_supervise_weight": tune.loguniform(1e-5, 1.0),
         "consistency_weight": tune.loguniform(1e-5, 1.0),
