@@ -1,4 +1,5 @@
-from turtle import pos
+from sched import scheduler
+from turtle import mode, pos
 import torch
 import numpy as np
 from dgl.data import GINDataset
@@ -20,9 +21,9 @@ def get_graphs(data, batch_size):
     return dataset, train_idxs, test_idxs
     
 def _run(args, data_train, data_valid):
-    y_mean = torch.cat([y.float() for g, y in data_train]).float().mean(0)
+    # y_mean = torch.cat([y.float() for g, y in data_train]).float().mean(0)
     g, y = next(iter(data_train))
-    pos_weight = (1 - y_mean) / y_mean
+    # pos_weight = (1 - y_mean) / y_mean
     early_stopping = EarlyStopping(patience=args.patience)
 
     from rum.models import RUMGraphRegressionModel
@@ -35,15 +36,13 @@ def _run(args, data_train, data_valid):
         length=args.length,
         dropout=args.dropout,
         self_supervise_weight=args.self_supervise_weight,
-        consistency_weight=args.consistency_weight,
-        temperature=args.consistency_temperature,
         activation=getattr(torch.nn, args.activation)(),
+        binary=False,
     )
-
 
     if torch.cuda.is_available():
         model = model.cuda()
-        pos_weight = pos_weight.cuda()
+        # pos_weight = pos_weight.cuda()
 
     optimizer = getattr(
         torch.optim,
@@ -52,6 +51,13 @@ def _run(args, data_train, data_valid):
         model.parameters(), 
         lr=args.learning_rate,
         weight_decay=args.weight_decay,
+    )
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        factor=args.factor,
+        patience=args.patience,
+        mode="max",
     )
     
     accs = []
@@ -65,7 +71,7 @@ def _run(args, data_train, data_valid):
             optimizer.zero_grad()
             h, loss = model(g, g.ndata["attr"])
             loss = loss + torch.nn.BCEWithLogitsLoss(
-                pos_weight=pos_weight,
+                # pos_weight=pos_weight,
             )(h, y)
             loss.backward()
             optimizer.step()
@@ -83,8 +89,10 @@ def _run(args, data_train, data_valid):
 
             h_vl, y_vl = torch.cat(h_vl), torch.cat(y_vl)
             acc = ((h_vl.sigmoid() - y_vl).abs() < 0.5).float().mean().item()
+            scheduler.step(acc)
+            # print(acc)
             accs.append(acc)
-            if early_stopping([-acc]):
+            if optimizer.param_groups[0]["lr"] < 1e-6:
                 break
     accs = np.array(accs)
     if len(accs) < args.n_epochs:
@@ -116,6 +124,7 @@ def run(args):
     accs_std = np.std(accs, axis=0)
     accs = np.mean(accs, axis=0)
     accs, accs_std = np.max(accs), accs_std[np.argmax(accs)]
+    print(accs, accs_std)
     return accs, accs_std
 
 if __name__ == "__main__":
@@ -124,25 +133,22 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default="MUTAG")
     parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num_samples", type=int, default=8)
-    parser.add_argument("--length", type=int, default=8)
+    parser.add_argument("--num_samples", type=int, default=4)
+    parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=200)
-    # parser.add_argument("--factor", type=float, default=0.5)
-    # parser.add_argument("--patience", type=int, default=10)
-    parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=1e-3)
-    parser.add_argument("--consistency_weight", type=float, default=1e-3)
-    parser.add_argument("--consistency_temperature", type=float, default=0.5)
+    parser.add_argument("--learning_rate", type=float, default=1e-2)
+    parser.add_argument("--weight_decay", type=float, default=1e-10)
+    parser.add_argument("--n_epochs", type=int, default=500)
+    parser.add_argument("--factor", type=float, default=0.5)
+    parser.add_argument("--temperature", type=float, default=0.1)
+    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--activation", type=str, default="ELU")
+    parser.add_argument("--activation", type=str, default="SiLU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=-1)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)

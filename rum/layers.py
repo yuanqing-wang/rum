@@ -17,6 +17,7 @@ class RUMLayer(torch.nn.Module):
             random_walk: callable = uniform_random_walk,
             activation: callable = torch.nn.Identity(),
             edge_features: int = 0,
+            binary: bool = True,
             **kwargs
     ):
         super().__init__()
@@ -32,7 +33,7 @@ class RUMLayer(torch.nn.Module):
         self.num_samples = num_samples
         self.length = length
         self.dropout = torch.nn.Dropout(dropout)
-        self.self_supervise = SelfSupervise(in_features, original_features)
+        self.self_supervise = SelfSupervise(in_features, original_features, binary=binary)
         self.activation = activation
 
     def forward(self, g, h, y0, e=None):
@@ -114,10 +115,11 @@ class Consistency(torch.nn.Module):
         return loss
 
 class SelfSupervise(torch.nn.Module):
-    def __init__(self, in_features, out_features, subsample=100):
+    def __init__(self, in_features, out_features, subsample=100, binary=True):
         super().__init__()
         self.fc = torch.nn.Linear(in_features, out_features)
         self.subsample = subsample
+        self.binary = binary
 
     def forward(self, y_hat, y):
         idxs = torch.randint(high=y_hat.shape[-3], size=(self.subsample, ), device=y.device)
@@ -125,7 +127,10 @@ class SelfSupervise(torch.nn.Module):
         y = y[..., idxs, 1:, :].contiguous()
         y_hat = y_hat[..., idxs, :-1, :].contiguous()
         y_hat = self.fc(y_hat)
-        loss = torch.nn.BCEWithLogitsLoss(
-            pos_weight=y.detach().mean().pow(-1)
-        )(y_hat, y)
+        if self.binary:
+            loss = torch.nn.BCEWithLogitsLoss(
+                pos_weight=y.detach().mean().pow(-1)
+            )(y_hat, y)
+        else:
+            loss = torch.nn.CrossEntropyLoss()(y_hat, y)
         return loss 
