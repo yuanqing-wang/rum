@@ -97,26 +97,22 @@ def run(args):
         
     for idx in range(args.n_epochs):
         for g, y in data_train:
+            model.train()
             if torch.cuda.is_available():
                 g = g.to("cuda")
                 y = y.to("cuda")
             y = y.unsqueeze(-1).float()
             optimizer.zero_grad()
             h, loss = model(g, g.ndata["feat"].float(), e=g.edata["feat"])
-            h = h.mean(0)
             loss = loss + torch.nn.functional.mse_loss(h, y)
             loss.backward()
             optimizer.step()
 
         with torch.no_grad():
+            model.eval()
             h_vl, _ = model(g_vl, g_vl.ndata["feat"].float(), e=g_vl.edata["feat"].float())
-            h_vl = h_vl.mean(0)
             rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
-            # if early_stopping([rmse_vl]):
-            #     break
-
             h_te, _ = model(g_te, g_te.ndata["feat"].float(), e=g_te.edata["feat"].float())
-            h_te = h_te.mean(0)
             rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
 
             print(rmse_vl, rmse_te, flush=True)
@@ -132,9 +128,9 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="ESOL")
-    parser.add_argument("--hidden_features", type=int, default=128)
+    parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num_samples", type=int, default=4)
+    parser.add_argument("--num_samples", type=int, default=8)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-5)
@@ -146,9 +142,9 @@ if __name__ == "__main__":
     parser.add_argument("--self_supervise_weight", type=float, default=1e-3)
     parser.add_argument("--consistency_weight", type=float, default=1e-3)
     parser.add_argument("--consistency_temperature", type=float, default=0.1)
-    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--activation", type=str, default="ELU")
+    parser.add_argument("--activation", type=str, default="SiLU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=100)
