@@ -111,6 +111,7 @@ def run(args):
             Subset(dataset, _train_idxs.tolist()),
             batch_size=batch_size,
             shuffle=True,
+            drop_last=True,
         )
         data_valid = GraphDataLoader(
             Subset(dataset, _test_idxs.tolist()),
