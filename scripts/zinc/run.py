@@ -52,7 +52,7 @@ def run(args):
         self_supervise_weight=args.self_supervise_weight,
         consistency_weight=args.consistency_weight,
         activation=getattr(torch.nn, args.activation)(),
-        edge_features=g.edata["feat"].shape[-1],
+        # edge_features=g.edata["feat"].shape[-1],
     )
 
     if torch.cuda.is_available():
@@ -103,16 +103,25 @@ def run(args):
                 y = y.to("cuda")
             y = y.unsqueeze(-1).float()
             optimizer.zero_grad()
-            h, loss = model(g, g.ndata["feat"].float(), e=g.edata["feat"])
+            h, loss = model(
+                g, g.ndata["feat"].float(), 
+                # e=g.edata["feat"],
+            )
             loss = loss + torch.nn.functional.mse_loss(h, y)
             loss.backward()
             optimizer.step()
 
         with torch.no_grad():
             model.eval()
-            h_vl, _ = model(g_vl, g_vl.ndata["feat"].float(), e=g_vl.edata["feat"].float())
+            h_vl, _ = model(
+                g_vl, g_vl.ndata["feat"].float(), 
+                # e=g_vl.edata["feat"].float(),
+            )
             rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
-            h_te, _ = model(g_te, g_te.ndata["feat"].float(), e=g_te.edata["feat"].float())
+            h_te, _ = model(
+                g_te, g_te.ndata["feat"].float(), 
+                # e=g_te.edata["feat"].float(),
+            )
             rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
 
             print(rmse_vl, rmse_te, flush=True)
