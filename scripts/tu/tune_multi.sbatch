@@ -7,4 +7,4 @@
 #SBATCH --ntasks-per-node=1
 ####SBATCH --partition nvidia
 
-python tune_multi.py --data COLLAB
+python tune_multi.py --data REDDIT
