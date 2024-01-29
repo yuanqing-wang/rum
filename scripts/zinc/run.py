@@ -114,13 +114,8 @@ def run(args):
                 g, g.ndata["feat"].float(), 
                 # e=g.edata["feat"],
             )
-<<<<<<< HEAD
-            h = h * y_std + y_mean
-            loss = loss + torch.nn.functional.mse_loss(h, y)
-=======
             # loss = loss + torch.nn.functional.l1_loss(h, y)
             loss = torch.nn.functional.l1_loss(h, y)
->>>>>>> d731b2b914f487557f833cfd950b403c77c5b04c
             loss.backward()
             optimizer.step()
 
@@ -157,15 +152,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
-<<<<<<< HEAD
-    parser.add_argument("--learning_rate", type=float, default=1e-4)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=100000)
-=======
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=20000)
->>>>>>> d731b2b914f487557f833cfd950b403c77c5b04c
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
