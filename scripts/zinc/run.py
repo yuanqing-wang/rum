@@ -36,7 +36,10 @@ def get_graphs(batch_size):
 
 def run(args):
     data_train, data_valid, data_test = get_graphs(args.batch_size)
-    g, y = next(iter(data_train))
+    y = torch.cat([y for _, y in data_train])
+    g, _ = next(iter(data_train))
+    y_mean = y.mean()
+    y_std = y.std()
 
     from rum.models import RUMGraphRegressionModel
     model = RUMGraphRegressionModel(
@@ -50,7 +53,7 @@ def run(args):
         num_layers=1,
         self_supervise_weight=args.self_supervise_weight,
         activation=getattr(torch.nn, args.activation)(),
-        # edge_features=g.edata["feat"].shape[-1],
+        binary=False,
     )
 
     if torch.cuda.is_available():
@@ -111,8 +114,13 @@ def run(args):
                 g, g.ndata["feat"].float(), 
                 # e=g.edata["feat"],
             )
+<<<<<<< HEAD
+            h = h * y_std + y_mean
+            loss = loss + torch.nn.functional.mse_loss(h, y)
+=======
             # loss = loss + torch.nn.functional.l1_loss(h, y)
             loss = torch.nn.functional.l1_loss(h, y)
+>>>>>>> d731b2b914f487557f833cfd950b403c77c5b04c
             loss.backward()
             optimizer.step()
 
@@ -122,11 +130,13 @@ def run(args):
                 g_vl, g_vl.ndata["feat"].float(), 
                 # e=g_vl.edata["feat"].float(),
             )
+            h_vl = h_vl * y_std + y_mean
             rmse_vl = torch.sqrt(torch.nn.functional.mse_loss(h_vl, y_vl)).item()
             h_te, _ = model(
                 g_te, g_te.ndata["feat"].float(), 
                 # e=g_te.edata["feat"].float(),
             )
+            h_te = h_te * y_std + y_mean
             rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
             scheduler.step(rmse_vl)
             print(rmse_vl, rmse_te, flush=True)
@@ -147,9 +157,15 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
+<<<<<<< HEAD
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
+    parser.add_argument("--weight_decay", type=float, default=1e-5)
+    parser.add_argument("--n_epochs", type=int, default=100000)
+=======
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=20000)
+>>>>>>> d731b2b914f487557f833cfd950b403c77c5b04c
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
