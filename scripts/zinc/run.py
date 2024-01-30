@@ -114,13 +114,10 @@ def run(args):
                 g, g.ndata["feat"].float(), 
                 # e=g.edata["feat"],
             )
-<<<<<<< HEAD
             h = h * y_std + y_mean
-            loss = loss + torch.nn.functional.mse_loss(h, y)
-=======
-            # loss = loss + torch.nn.functional.l1_loss(h, y)
-            loss = torch.nn.functional.l1_loss(h, y)
->>>>>>> d731b2b914f487557f833cfd950b403c77c5b04c
+            new_loss = torch.nn.functional.mse_loss(h, y)
+            print(new_loss)
+            loss = loss + new_loss
             loss.backward()
             optimizer.step()
 
@@ -138,12 +135,12 @@ def run(args):
             )
             h_te = h_te * y_std + y_mean
             rmse_te = torch.sqrt(torch.nn.functional.mse_loss(h_te, y_te)).item()
-            scheduler.step(rmse_vl)
+            # scheduler.step(rmse_vl)
             print(rmse_vl, rmse_te, flush=True)
 
-            if rmse_vl < rmse_vl_min:
-                rmse_vl_min = rmse_vl
-                rmse_te_min = rmse_te
+        #     if rmse_vl < rmse_vl_min:
+        #         rmse_vl_min = rmse_vl
+        #         rmse_te_min = rmse_te
 
     # print(rmse_vl_min, rmse_te_min, flush=True)
     # return rmse_vl_min, rmse_te_min
@@ -157,26 +154,20 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
-<<<<<<< HEAD
-    parser.add_argument("--learning_rate", type=float, default=1e-4)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--n_epochs", type=int, default=100000)
-=======
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=20000)
->>>>>>> d731b2b914f487557f833cfd950b403c77c5b04c
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--self_supervise_weight", type=float, default=0.0)
-    parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="SiLU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=100)
-    parser.add_argument("--batch_size", type=int, default=1024)
+    parser.add_argument("--batch_size", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=2666)
     args = parser.parse_args()
     run(args)

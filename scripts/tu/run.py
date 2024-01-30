@@ -70,9 +70,11 @@ def _run(args, data_train, data_valid):
                 y = y.to("cuda")
             optimizer.zero_grad()
             h, loss = model(g, g.ndata["attr"])
-            loss = loss + torch.nn.BCEWithLogitsLoss(
+            new_loss = torch.nn.BCEWithLogitsLoss(
                 # pos_weight=pos_weight,
             )(h, y)
+            print(new_loss)
+            loss = loss + new_loss
             loss.backward()
             optimizer.step()
 
