@@ -7,8 +7,4 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --partition nvidia
 
-<<<<<<< HEAD
 python tune.py --data MUTAG
-=======
-python tune.py --data NCI1
->>>>>>> 34ab7f1bb61abc76572a21b286ac32e0738bde4a

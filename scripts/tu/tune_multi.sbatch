@@ -7,4 +7,4 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --partition nvidia
 
-python tune_multi.py --data IMDBMULTI
+python tune_multi.py --data COLLAB
