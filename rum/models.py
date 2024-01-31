@@ -56,9 +56,6 @@ class RUMGraphRegressionModel(RUMModel):
         super().__init__(*args, **kwargs)
 
         self.fc_out = torch.nn.Sequential(
-            torch.nn.BatchNorm1d(self.hidden_features),
-            self.activation,
-            torch.nn.Dropout(kwargs["dropout"]),
             torch.nn.Linear(self.hidden_features, self.hidden_features),
             torch.nn.BatchNorm1d(self.hidden_features),
             self.activation,
