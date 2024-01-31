@@ -18,6 +18,7 @@ class RUMLayer(torch.nn.Module):
             activation: callable = torch.nn.Identity(),
             edge_features: int = 0,
             binary: bool = True,
+            directed: bool = False,
             **kwargs
     ):
         super().__init__()
@@ -35,6 +36,7 @@ class RUMLayer(torch.nn.Module):
         self.dropout = torch.nn.Dropout(dropout)
         self.self_supervise = SelfSupervise(in_features, original_features, binary=binary)
         self.activation = activation
+        self.directed = directed
 
     def forward(self, g, h, y0, e=None):
         """Forward pass.
@@ -57,6 +59,13 @@ class RUMLayer(torch.nn.Module):
             num_samples=self.num_samples, 
             length=self.length,
         )
+        if self.directed:
+            walks = torch.where(
+                walks == -1,
+                walks[..., 0:1],
+                walks,
+            )
+
         uniqueness_walk = uniqueness(walks)
         walks, uniqueness_walk = walks.flip(-1), uniqueness_walk.flip(-1)
         uniqueness_walk = uniqueness_walk / uniqueness_walk.shape[-1]
