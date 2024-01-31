@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=16)
-    parser.add_argument("--length", type=int, default=12)
+    parser.add_argument("--length", type=int, default=32)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
