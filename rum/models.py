@@ -56,8 +56,9 @@ class RUMGraphRegressionModel(RUMModel):
         super().__init__(*args, **kwargs)
 
         self.fc_out = torch.nn.Sequential(
+            self.activation,
             torch.nn.Linear(self.hidden_features, self.hidden_features),
-            torch.nn.BatchNorm1d(self.hidden_features),
+            # torch.nn.BatchNorm1d(self.hidden_features),
             self.activation,
             torch.nn.Dropout(kwargs["dropout"]),
             torch.nn.Linear(self.hidden_features, self.out_features),
@@ -73,6 +74,7 @@ class RUMGraphRegressionModel(RUMModel):
                 h = h.mean(0)
             h, _loss = layer(g, h, h0, e=e)
             loss = loss + self.self_supervise_weight * _loss
+        # h = self.activation(h)
         h = h.mean(0)
         g.ndata["h"] = h
         h = dgl.sum_nodes(g, "h")

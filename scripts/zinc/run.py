@@ -72,7 +72,7 @@ def run(args):
         optimizer, 
         mode="min",
         factor=0.8,
-        patience=10,
+        patience=100,
     )
 
     # for _ in range(1000):

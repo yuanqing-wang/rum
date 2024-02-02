@@ -23,6 +23,7 @@ class SmallRUMModel(torch.nn.Module):
                 in_features=hidden_features,
                 out_features=hidden_features,
             ),
+            # torch.nn.LayerNorm(hidden_features),
             torch.nn.SiLU(),
             torch.nn.Linear(
                 in_features=hidden_features,
@@ -104,7 +105,7 @@ def run(args):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode="max",
-        factor=0.5,
+        factor=0.8,
         patience=100,
         verbose=True,
     )
@@ -136,14 +137,14 @@ def run(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=16)
-    parser.add_argument("--length", type=int, default=32)
+    parser.add_argument("--length", type=int, default=12)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
-    parser.add_argument("--n_epochs", type=int, default=20000)
+    parser.add_argument("--n_epochs", type=int, default=20000000)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="SiLU")
