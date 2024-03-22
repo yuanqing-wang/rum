@@ -1,3 +1,4 @@
+from re import sub
 from typing import Callable
 import torch
 import dgl
@@ -15,6 +16,7 @@ class RUMModel(torch.nn.Module):
             temperature=0.1,
             self_supervise_weight=0.05,
             consistency_weight=0.01,
+            degrees: bool=True,
             **kwargs,
     ):
         super().__init__()
@@ -26,13 +28,13 @@ class RUMModel(torch.nn.Module):
         self.depth = depth
         self.layers = torch.nn.ModuleList()
         for _ in range(depth):
-            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, **kwargs))
+            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, degrees=degrees, **kwargs))
         self.activation = activation
         self.consistency = Consistency(temperature=temperature)
         self.self_supervise_weight = self_supervise_weight
         self.consistency_weight = consistency_weight
 
-    def forward(self, g, h, e=None, consistency_weight=None):
+    def forward(self, g, h, e=None, consistency_weight=None, subsample=None):
         g = g.local_var()
         if consistency_weight is None:
             consistency_weight = self.consistency_weight
@@ -42,7 +44,7 @@ class RUMModel(torch.nn.Module):
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h, _loss = layer(g, h, h0, e=e)
+            h, _loss = layer(g, h, h0, e=e, subsample=subsample)
             loss = loss + self.self_supervise_weight * _loss
         h = self.fc_out(h).softmax(-1)
         if self.training:
@@ -64,7 +66,7 @@ class RUMGraphRegressionModel(RUMModel):
             torch.nn.Linear(self.hidden_features, self.out_features),
         )
 
-    def forward(self, g, h, e=None):
+    def forward(self, g, h, e=None, subsample=None):
         g = g.local_var()
         h0 = h
         h = self.fc_in(h)
@@ -72,7 +74,7 @@ class RUMGraphRegressionModel(RUMModel):
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h, _loss = layer(g, h, h0, e=e)
+            h, _loss = layer(g, h, h0, e=e, subsample=subsample)
             loss = loss + self.self_supervise_weight * _loss
         # h = self.activation(h)
         h = h.mean(0)

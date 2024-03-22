@@ -2,7 +2,7 @@ import dgl
 import torch
 from functools import partial
 
-def uniform_random_walk(g, num_samples, length):
+def uniform_random_walk(g, num_samples, length, subsample=None):
     """
     Random walk on a graph.
 
@@ -20,11 +20,16 @@ def uniform_random_walk(g, num_samples, length):
     walks : Tensor
         The random walks.
     """
-    nodes = g.nodes()
-    nodes = nodes.repeat(num_samples)
+    if subsample is None:
+        nodes = g.nodes()
+        num_nodes = g.number_of_nodes()
+        nodes = nodes.repeat(num_samples)
+    else:
+        nodes = subsample.repeat(num_samples)
+        num_nodes = subsample.size(0)
     walks, eids, _ = dgl.sampling.random_walk(g=g, nodes=nodes, length=length-1, return_eids=True)
-    walks = walks.view(num_samples, g.number_of_nodes(), length)
-    eids = eids.view(num_samples, g.number_of_nodes(), length-1)
+    walks = walks.view(num_samples, num_nodes, length)
+    eids = eids.view(num_samples, num_nodes, length-1)
     return walks, eids
 
 # @torch.jit.trace(example_inputs=(torch.zeros(10, 10, 10)))
