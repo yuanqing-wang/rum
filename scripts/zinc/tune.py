@@ -5,6 +5,7 @@ from run import run
 import ray
 from ray import tune, air, train
 from ray.tune.schedulers import ASHAScheduler
+from ray.tune.search.ax import AxSearch
 from ray.tune.search import Repeater
 import torch
 num_gpus = torch.cuda.device_count()
@@ -16,8 +17,7 @@ def objective(config):
     checkpoint = os.path.join(os.getcwd(), "model.pt")
     config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
-    rmse_vl, rmse_te = run(args)
-    ray.train.report(dict(rmse_vl=rmse_vl, rmse_te=rmse_te))
+    run(args)
 
 def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
@@ -45,17 +45,18 @@ def experiment(args):
 
     scheduler = ASHAScheduler(
         time_attr='training_iteration',
-        metric='rmse_vl',
-        mode='min',
-        max_t=100,
-        grace_period=10,
+        max_t=500,
+        grace_period=100,
         reduction_factor=3,
         brackets=1,
     )
 
     tune_config = tune.TuneConfig(
         scheduler=scheduler,
+        search_alg=AxSearch(),
         num_samples=100,
+        mode='min',
+        metric='mae_vl',
     )
 
     storage_path = os.path.join(os.getcwd(), args.data)
@@ -63,7 +64,7 @@ def experiment(args):
     run_config = air.RunConfig(
         name=name,
         storage_path=storage_path,
-        verbose=0,
+        verbose=1,
     )
 
     tuner = tune.Tuner(
@@ -73,7 +74,7 @@ def experiment(args):
         run_config=run_config,
     )
 
-    results = tuner.fit()
+    tuner.fit()
 
 if __name__ == "__main__":
     import argparse
