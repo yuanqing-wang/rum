@@ -120,6 +120,7 @@ def run(args):
 
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
+        model.train()
         optimizer.zero_grad()
         h, loss = model(g, g.ndata["feat"], e=e)
         h = h.mean(0).log()
@@ -132,6 +133,7 @@ def run(args):
         
 
         with torch.no_grad():
+            model.eval()
             h, _ = model(g, g.ndata["feat"], e=e)
             h = h.mean(0)
             acc_tr = (
@@ -173,10 +175,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="FlickrDataset")
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=16)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=4)
-    parser.add_argument("--length", type=int, default=8)
+    parser.add_argument("--length", type=int, default=4)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-10)

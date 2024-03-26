@@ -4,7 +4,7 @@ from datetime import datetime
 from run import run
 import ray
 from ray import tune, air, train
-from ray.tune.search.ax import AxSearch
+from ray.tune.search.optuna import OptunaSearch
 from ray.tune.schedulers import ASHAScheduler
 
 from ray.tune.search import Repeater
@@ -40,7 +40,7 @@ def experiment(args):
         "dropout": tune.uniform(0.0, 0.5),
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
-        "batch_size": 512,
+        "batch_size": 1024,
     }
 
     scheduler = ASHAScheduler(
@@ -53,8 +53,8 @@ def experiment(args):
 
     tune_config = tune.TuneConfig(
         scheduler=scheduler,
-        search_alg=AxSearch(),
-        num_samples=100,
+        search_alg=OptunaSearch(),
+        num_samples=1000,
         mode='max',
         metric='acc_vl',
     )

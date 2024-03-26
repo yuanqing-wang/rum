@@ -5,5 +5,5 @@
 #BSUB -W 12:00
 #BSUB -n 1
 
-python tune.py --data CiteseerGraphDataset
+python tune.py --data CoraGraphDataset
 

@@ -15,7 +15,7 @@ def check(args):
                 lines = f.readlines()
                 for line in lines:
                     result = json.loads(line)
-            results.append(result)
+                    results.append(result)
         except:
             pass
         

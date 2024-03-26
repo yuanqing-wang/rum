@@ -6,5 +6,5 @@
 #BSUB -n 1
 #BSUB -R V100
 
-python tune.py --dataset FlickrDataset
+python tune.py --dataset RedditDataset
  
