@@ -23,11 +23,11 @@ def get_graphs(data, batch_size):
     dataset = locals()[args.data](
         featurizer, 
         load=True,
-        cache_file_path=os.path.join(os.path.dirname(__file__), "hiv_dglgraph.bin"),
+        cache_file_path=os.path.join(os.path.dirname(__file__), f"{data.lower()}_dglgraph.bin"),
     )
 
-    evaluator = Evaluator(name=data)
-    split_idx = DglGraphPropPredDataset(name=data).get_idx_split()
+    evaluator = Evaluator(name=f"ogbg-mol{data.lower()}")
+    split_idx = DglGraphPropPredDataset(name=f"ogbg-mol{data.lower()}").get_idx_split()
     pos_weight = dataset.task_pos_weights(split_idx["train"])[0]
     data_train = [(dataset[idx][1], dataset[idx][2]) for idx in split_idx["train"]]
     data_valid = [(dataset[idx][1], dataset[idx][2]) for idx in split_idx["valid"]]
@@ -51,8 +51,8 @@ def get_graphs(data, batch_size):
 def run(args):
     print(args, flush=True)
     metric = {
-        "ogbg-molhiv": "rocauc",
-        "ogbg-molpcba": "ap",
+        "HIV": "rocauc",
+        "PCBA": "ap",
     }[args.data]
     data_train, data_valid, data_test, evaluator = get_graphs(args.data, args.batch_size)
 
@@ -117,6 +117,7 @@ def run(args):
             optimizer.step()
 
         with torch.no_grad():
+            model.eval()
             h_vl = []
             y_vl = []
             h_te = []

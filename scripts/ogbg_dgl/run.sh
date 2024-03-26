@@ -5,6 +5,6 @@
 #BSUB -W 23:00
 #BSUB -n 1
 
-python run.py --data PCBA
-# python run.py --data ogbg-molhiv
+# python run.py --data PCBA
+python run.py --data HIV
 

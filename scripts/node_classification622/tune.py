@@ -57,7 +57,7 @@ def experiment(args):
         mode="max",
         scheduler=scheduler,
         search_alg=Repeater(OptunaSearch(), 3),
-        num_samples=100,
+        num_samples=3000,
     )
 
     if args.split_index < 0:

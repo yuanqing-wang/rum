@@ -12,19 +12,22 @@ def check(args):
     for result_path in result_paths:
         try:
             with open(result_path, "r") as f:
-                result_str = f.read()
-                result = json.loads(result_str)
-            results.append(result)
+                lines = f.readlines()
+                for line in lines:
+                    result = json.loads(line)
+                    results.append(result)
         except:
             pass
 
 
+    print(len(results), len(result_paths))
     if "__trial_index__" in results[0]["config"]:
         from collections import defaultdict
         config_to_result = defaultdict(list)
         for result in results:
             config = result["config"]
             config.pop("__trial_index__")
+            config["training_iteration"] = result["training_iteration"]
             checkpoint = config.pop("checkpoint")
             config_to_result[str(config)].append(
                 {"acc_vl": result["acc_vl"], "acc_te": result["acc_te"], "checkpoint": checkpoint}
