@@ -23,9 +23,9 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
     param_space = {
         "data": args.data,
-        "hidden_features": tune.randint(32, 128),
+        "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
-        "weight_decay": tune.loguniform(1e-8, 1e-2),
+        "weight_decay": tune.loguniform(1e-12, 1e-2),
         "length": tune.randint(3, 8),
         "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
@@ -37,7 +37,7 @@ def experiment(args):
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
-        "batch_size": 256,
+        "batch_size": 32,
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
         "factor": tune.uniform(0.5, 0.9),
@@ -46,7 +46,7 @@ def experiment(args):
     scheduler = ASHAScheduler(
         time_attr='training_iteration',
         max_t=500,
-        grace_period=100,
+        grace_period=50,
         reduction_factor=3,
         brackets=1,
     )

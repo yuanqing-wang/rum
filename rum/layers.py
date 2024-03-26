@@ -20,6 +20,7 @@ class RUMLayer(torch.nn.Module):
             binary: bool = True,
             directed: bool = False,
             degrees: bool = True,
+            self_supervise: bool = True,
             **kwargs
     ):
         super().__init__()
@@ -35,7 +36,10 @@ class RUMLayer(torch.nn.Module):
         self.num_samples = num_samples
         self.length = length
         self.dropout = torch.nn.Dropout(dropout)
-        self.self_supervise = SelfSupervise(in_features, original_features, binary=binary)
+        if self_supervise:
+            self.self_supervise = SelfSupervise(in_features, original_features, binary=binary)
+        else:
+            self.self_supervise = None
         self.activation = activation
         self.directed = directed
         self.degrees = degrees
@@ -85,6 +89,8 @@ class RUMLayer(torch.nn.Module):
         h0 = torch.zeros(self.rnn_walk.num_layers * num_directions, *h.shape[:-2], self.out_features, device=h.device)
         y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
         h_walk = h_walk.mean(0, keepdim=True)
+        if self.rnn.num_layers > 1:
+            h_walk = h_walk.repeat(self.rnn.num_layers, 1, 1, 1)
         if self.degrees:
             degrees = g.in_degrees(walks.flatten()).float().reshape(*walks.shape).unsqueeze(-1)
             degrees = degrees / degrees.max()
@@ -106,7 +112,7 @@ class RUMLayer(torch.nn.Module):
             h = _h
 
         y, h = self.rnn(h, h_walk)
-        if self.training:
+        if self.training and self.self_supervise:
             if e is not None:
                 y = y[..., ::2, :]
             loss = self.self_supervise(y, y0[walks])

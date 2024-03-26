@@ -35,7 +35,7 @@ def run(args):
         temperature=args.consistency_temperature,
         dropout=args.dropout,
         num_layers=1,
-        self_supervise_weight=args.self_supervise_weight,
+        self_supervise=False,
         consistency_weight=args.consistency_weight,
         degrees=False,
         binary=False,
@@ -61,7 +61,8 @@ def run(args):
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
         nodes = g.ndata["train_mask"].nonzero().flatten()[torch.randperm(g.ndata["train_mask"].sum())]
-        for i in range(0, g.ndata["train_mask"].sum(), args.batch_size):
+        from tqdm import tqdm
+        for i in tqdm(range(0, g.ndata["train_mask"].sum(), args.batch_size)):
             subsample = nodes[i:i+args.batch_size]
             subsample = subsample.to(g.device)
             optimizer.zero_grad()
@@ -126,12 +127,11 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='OGBN Node Property Prediction')
     parser.add_argument('--dataset', type=str, default='ogbn-products')
-    parser.add_argument('--hidden_features', type=int, default=32)
+    parser.add_argument('--hidden_features', type=int, default=128)
     parser.add_argument('--depth', type=int, default=1)
-    parser.add_argument('--num_samples', type=int, default=4)
+    parser.add_argument('--num_samples', type=int, default=1)
     parser.add_argument('--length', type=int, default=4)
     parser.add_argument('--consistency_temperature', type=float, default=1.0)
-    parser.add_argument('--self_supervise_weight', type=float, default=1e-3)
     parser.add_argument('--consistency_weight', type=float, default=1e-3)
     parser.add_argument('--dropout', type=float, default=0.1)
     parser.add_argument('--activation', type=str, default='SiLU')
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=1e-2)
     parser.add_argument('--weight_decay', type=float, default=1e-10)
     parser.add_argument('--patience', type=int, default=100)
-    parser.add_argument("--batch_size", type=int, default=1024)
+    parser.add_argument("--batch_size", type=int, default=5000)
     parser.add_argument('--n_epochs', type=int, default=50)
     args = parser.parse_args()
     run(args)

@@ -72,6 +72,7 @@ class RUMGraphRegressionModel(RUMModel):
         loss = 0.0
         for idx, layer in enumerate(self.layers):
             if idx > 0:
+                h = torch.nn.functional.tanh(h)
                 h = h.mean(0)
             h, _loss = layer(g, h, h0, e=e, subsample=subsample)
             loss = loss + self.self_supervise_weight * _loss
