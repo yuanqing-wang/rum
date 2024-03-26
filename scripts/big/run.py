@@ -52,6 +52,7 @@ def run(args):
 
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
+        model.train()
         nodes = g.ndata["train_mask"].nonzero().flatten()[torch.randperm(g.ndata["train_mask"].sum())]
         for i in range(0, g.ndata["train_mask"].sum(), args.batch_size):
             subsample = nodes[i:i+args.batch_size]
@@ -67,6 +68,7 @@ def run(args):
             optimizer.step()
             
         with torch.no_grad():
+            model.eval()
             nodes = g.nodes()
             h = []
             for i in range(0, g.num_nodes(), args.batch_size):
