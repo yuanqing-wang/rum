@@ -15,10 +15,11 @@ def check(args):
                 lines = f.readlines()
                 for line in lines:
                     result = json.loads(line)
-            results.append(result)
+                    results.append(result)
         except:
             pass
-        
+    
+    print(len(result_paths), len(results))
     # print(results)
     results = sorted(results, key=lambda x: x["acc_vl"], reverse=True)
 

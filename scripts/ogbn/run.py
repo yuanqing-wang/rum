@@ -61,8 +61,8 @@ def run(args):
     acc_vl_max, acc_te_max = 0, 0
     for idx in range(args.n_epochs):
         nodes = g.ndata["train_mask"].nonzero().flatten()[torch.randperm(g.ndata["train_mask"].sum())]
-        from tqdm import tqdm
-        for i in tqdm(range(0, g.ndata["train_mask"].sum(), args.batch_size)):
+        model.train()
+        for i in range(0, g.ndata["train_mask"].sum(), args.batch_size):
             subsample = nodes[i:i+args.batch_size]
             subsample = subsample.to(g.device)
             optimizer.zero_grad()
@@ -76,6 +76,7 @@ def run(args):
             optimizer.step()
             
         with torch.no_grad():
+            model.eval()
             nodes = g.nodes()
             h = []
             for i in range(0, g.num_nodes(), args.batch_size):
