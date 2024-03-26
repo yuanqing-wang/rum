@@ -1,0 +1,81 @@
+Sender: LSF System <lsfadmin@lu02>
+Subject: Job 4910714: <#BSUB -q gpuqueue;#BSUB -o %J.stdout;#BSUB -gpu "num=1:j_exclusive=yes";#BSUB -R "rusage[mem=5] span[ptile=1]";#BSUB -W 12:00;#BSUB -n 1; python run.py> in cluster <lila> Exited
+
+Job <#BSUB -q gpuqueue;#BSUB -o %J.stdout;#BSUB -gpu "num=1:j_exclusive=yes";#BSUB -R "rusage[mem=5] span[ptile=1]";#BSUB -W 12:00;#BSUB -n 1; python run.py> was submitted from host <ly05> by user <wangy1> in cluster <lila> at Sat Mar 23 23:14:32 2024
+Job was executed on host(s) <lu02>, in queue <gpuqueue>, as user <wangy1> in cluster <lila> at Sat Mar 23 23:15:20 2024
+</home/wangy1> was used as the home directory.
+</data/chodera/wangyq/rum/scripts/zinc> was used as the working directory.
+Started at Sat Mar 23 23:15:20 2024
+Terminated at Sat Mar 23 23:17:26 2024
+Results reported at Sat Mar 23 23:17:26 2024
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#BSUB -q gpuqueue
+#BSUB -o %J.stdout
+#BSUB -gpu "num=1:j_exclusive=yes"
+#BSUB -R "rusage[mem=5] span[ptile=1]"
+#BSUB -W 12:00
+#BSUB -n 1
+
+python run.py
+
+
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   70.00 sec.
+    Max Memory :                                 1 GB
+    Average Memory :                             0.40 GB
+    Total Requested Memory :                     5.00 GB
+    Delta Memory :                               4.00 GB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                48
+    Run time :                                   126 sec.
+    Turnaround time :                            174 sec.
+
+The output (if any) follows:
+
+Traceback (most recent call last):
+  File "/lila/data/chodera/wangyq/rum/scripts/zinc/run.py", line 166, in <module>
+    run(args)
+  File "/lila/data/chodera/wangyq/rum/scripts/zinc/run.py", line 119, in run
+    h_vl, _ = model(
+              ^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/chodera/wangyq/rum/rum/models.py", line 76, in forward
+    h, _loss = layer(g, h, h0, e=e, subsample=subsample)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/chodera/wangyq/rum/rum/layers.py", line 86, in forward
+    y_walk, h_walk = self.rnn_walk(uniqueness_walk, h0)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/chodera/wangyq/rum/rum/rnn.py", line 35, in forward
+    output, h_n = super().forward(input, h_0)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wangy1/miniconda3/envs/bronx/lib/python3.11/site-packages/torch/nn/modules/rnn.py", line 1102, in forward
+    result = _VF.gru(input, hx, self._flat_weights, self.bias, self.num_layers,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 11.90 GiB. GPU 0 has a total capacty of 7.79 GiB of which 5.15 GiB is free. Including non-PyTorch memory, this process has 2.63 GiB memory in use. Of the allocated memory 1.82 GiB is allocated by PyTorch, and 462.29 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

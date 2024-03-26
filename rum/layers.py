@@ -25,7 +25,7 @@ class RUMLayer(torch.nn.Module):
         super().__init__()
         # out_features = out_features // 2
         # self.fc = torch.nn.Linear(in_features + 2 * out_features + 1, out_features, bias=False)
-        self.rnn = rnn(in_features + 2 * out_features + + int(degrees), out_features, **kwargs)
+        self.rnn = rnn(in_features + 2 * out_features + int(degrees), out_features, **kwargs)
         self.rnn_walk = rnn(2, out_features, bidirectional=True, **kwargs)
         if edge_features > 0:
             self.fc_edge = torch.nn.Linear(edge_features, in_features + 2 * out_features, bias=False)
@@ -147,5 +147,6 @@ class SelfSupervise(torch.nn.Module):
                 pos_weight=y.detach().mean().pow(-1)
             )(y_hat, y)
         else:
-            loss = torch.nn.CrossEntropyLoss()(y_hat, y)
+            # loss = torch.nn.CrossEntropyLoss()(y_hat, y)
+            loss = torch.nn.MSELoss()(y_hat, y)
         return loss 

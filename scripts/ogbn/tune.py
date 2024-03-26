@@ -4,7 +4,7 @@ from datetime import datetime
 from run import run
 import ray
 from ray import tune, air, train
-from ray.tune.search.ax import AxSearch
+from ray.tune.search.optuna import OptunaSearch
 from ray.tune.schedulers import ASHAScheduler
 
 from ray.tune.search import Repeater
@@ -24,10 +24,10 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.dataset
     param_space = {
         "dataset": args.dataset,
-        "hidden_features": tune.randint(32, 256),
+        "hidden_features": tune.randint(32, 512),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-10, 1e-2),
-        "length": tune.randint(3, 8),
+        "length": tune.randint(3, 12),
         "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,
@@ -53,7 +53,7 @@ def experiment(args):
 
     tune_config = tune.TuneConfig(
         scheduler=scheduler,
-        search_alg=AxSearch(),
+        search_alg=OptunaSearch(),
         num_samples=100,
         mode='max',
         metric='acc_vl',

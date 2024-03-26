@@ -38,6 +38,7 @@ def run(args):
         self_supervise_weight=args.self_supervise_weight,
         consistency_weight=args.consistency_weight,
         degrees=False,
+        binary=False,
         activation=getattr(torch.nn, args.activation)(),
     )
 

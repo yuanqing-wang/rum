@@ -23,7 +23,7 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
     param_space = {
         "data": args.data,
-        "hidden_features": tune.randint(32, 64),
+        "hidden_features": tune.randint(32, 128),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-8, 1e-2),
         "length": tune.randint(3, 8),
@@ -37,7 +37,7 @@ def experiment(args):
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
-        "batch_size": 32,
+        "batch_size": 256,
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
         "factor": tune.uniform(0.5, 0.9),

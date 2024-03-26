@@ -16,7 +16,6 @@ class RUMModel(torch.nn.Module):
             temperature=0.1,
             self_supervise_weight=0.05,
             consistency_weight=0.01,
-            degrees: bool=True,
             **kwargs,
     ):
         super().__init__()
@@ -28,7 +27,7 @@ class RUMModel(torch.nn.Module):
         self.depth = depth
         self.layers = torch.nn.ModuleList()
         for _ in range(depth):
-            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, degrees=degrees, **kwargs))
+            self.layers.append(RUMLayer(hidden_features, hidden_features, in_features, **kwargs))
         self.activation = activation
         self.consistency = Consistency(temperature=temperature)
         self.self_supervise_weight = self_supervise_weight
