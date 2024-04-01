@@ -174,3 +174,4 @@ cython_debug/
 *objective*
 *dataset*
 *.stdout
+core.*

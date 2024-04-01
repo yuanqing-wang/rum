@@ -6,4 +6,5 @@
 #BSUB -n 1
 
 python tune.py --data CoraGraphDataset
+# python tune.py --data AmazonCoBuyPhotoDataset
 

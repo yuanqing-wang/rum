@@ -27,10 +27,25 @@ def get_graph(data):
     g.ndata["val_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
     g.ndata["test_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
 
-    idxs = torch.randperm(g.number_of_nodes())
-    train_idxs = idxs[:int(0.6 * g.number_of_nodes())]
-    val_idxs = idxs[int(0.6 * g.number_of_nodes()):int(0.8 * g.number_of_nodes())]
-    test_idxs = idxs[int(0.8 * g.number_of_nodes()):]
+    train_idxs = torch.tensor([], dtype=torch.int32)
+    val_idxs = torch.tensor([], dtype=torch.int32)
+    test_idxs = torch.tensor([], dtype=torch.int32)
+
+    n_classes = g.ndata["label"].max() + 1
+    for idx_class in range(n_classes):
+        idxs = torch.where(g.ndata["label"] == idx_class)[0]
+        idxs = idxs[torch.randperm(len(idxs))]
+        _train_idxs = idxs[:int(0.6 * len(idxs))]
+        _val_idxs = idxs[int(0.6 * len(idxs)):int(0.8 * len(idxs))]
+        _test_idxs = idxs[int(0.8 * len(idxs)):]
+        train_idxs = torch.cat([train_idxs, _train_idxs])
+        val_idxs = torch.cat([val_idxs, _val_idxs])
+        test_idxs = torch.cat([test_idxs, _test_idxs])
+
+        g.ndata["train_mask"][train_idxs] = True
+        g.ndata["val_mask"][val_idxs] = True
+        g.ndata["test_mask"][test_idxs] = True
+    return g
 
     g.ndata["train_mask"][train_idxs] = True
     g.ndata["val_mask"][val_idxs] = True
@@ -69,10 +84,15 @@ def run(args):
         dropout=args.dropout,
         num_layers=args.num_layers,
         self_supervise_weight=args.self_supervise_weight,
+        self_supervise=False,
         consistency_weight=args.consistency_weight,
         activation=getattr(torch.nn, args.activation)(),
         edge_features=e.shape[-1] if e is not None else 0,
     )
+
+    print(model)
+    number_of_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("Number of parameters:", number_of_parameters, flush=True)
 
     if torch.cuda.is_available():
         model = model.cuda()

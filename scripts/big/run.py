@@ -14,7 +14,7 @@ def run(args):
 
     g = locals()[args.dataset]()[0]
     g = dgl.remove_self_loop(g)
-    g.ndata["feat"] = g.ndata["feat"] / (g.ndata["feat"].norm(dim=-1, keepdim=True) + 1e-10)
+    # g.ndata["feat"] = g.ndata["feat"] / (g.ndata["feat"].norm(dim=-1, keepdim=True) + 1e-10)
 
     from rum.models import RUMModel
     model = RUMModel(

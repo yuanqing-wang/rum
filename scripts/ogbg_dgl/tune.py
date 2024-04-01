@@ -23,24 +23,22 @@ def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
     param_space = {
         "data": args.data,
-        "hidden_features": tune.randint(32, 64),
+        "hidden_features": tune.randint(32, 128),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-12, 1e-2),
         "length": tune.randint(3, 8),
         "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
-        "depth": 2,
+        "depth": tune.randint(1, 4),
         "num_layers": 1, # tune.randint(1, 3),
         "num_samples": 4,
         "n_epochs": 100,  
-        "patience": 10,
-        "self_supervise_weight": tune.loguniform(1e-4, 1.0),
-        "consistency_weight": tune.loguniform(1e-4, 1.0),
+        # "patience": 10,
         "dropout": tune.uniform(0.0, 0.5),
-        "batch_size": 32,
+        "batch_size": 256,
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
-        "factor": tune.uniform(0.5, 0.9),
+        # "factor": tune.uniform(0.5, 0.9),
     }
 
     scheduler = ASHAScheduler(
@@ -79,7 +77,7 @@ def experiment(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, default="ogbg-molhiv")
+    parser.add_argument("--data", type=str, default="HIV")
     parser.add_argument("--split_index", type=int, default=-1)
     args = parser.parse_args()
     experiment(args)

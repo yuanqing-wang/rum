@@ -73,6 +73,9 @@ class RUMLayer(torch.nn.Module):
                 walks,
             )
 
+        # walks = torch.zeros(1, 5000, 4).int().cuda()
+        # eids = None
+
         uniqueness_walk = uniqueness(walks)
         walks, uniqueness_walk = walks.flip(-1), uniqueness_walk.flip(-1)
         uniqueness_walk = uniqueness_walk / uniqueness_walk.shape[-1]

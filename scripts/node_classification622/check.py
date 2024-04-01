@@ -35,9 +35,11 @@ def check(args):
 
         results = []
         for config, results_ in config_to_result.items():
+            if len(results_) < args.rerun:
+                continue
             acc_vl = []
             acc_te = []
-            for result in results_:
+            for result in results_: 
                 acc_vl.append(result["acc_vl"])
                 acc_te.append(result["acc_te"])
             if len(acc_te) == 1:
@@ -66,6 +68,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, default=".")
     parser.add_argument("--report", type=str, default="")
-    parser.add_argument("--rerun", type=int, default=0)
+    parser.add_argument("--rerun", type=int, default=3)
     args = parser.parse_args()
     check(args)

@@ -32,8 +32,6 @@ def get_graphs(data, batch_size):
     dataset = DglGraphPropPredDataset(name=data)
     evaluator = Evaluator(name=data)
     h_max = torch.stack([g.ndata["feat"].max(dim=0).values for g in dataset.graphs]).max(dim=0).values
-    # for graph in dataset.graphs:
-    #     transform(graph, h_max)
     split_idx = dataset.get_idx_split()
     data_train = dataset[split_idx["train"]]
     data_valid = dataset[split_idx["valid"]]
@@ -80,7 +78,6 @@ def run(args):
         activation=getattr(torch.nn, args.activation)(),
         binary=True,
         degrees=False,
-        walk=False,
     )
     print(model)
 
@@ -122,6 +119,7 @@ def run(args):
             optimizer.step()
 
         with torch.no_grad():
+            model.eval()
             h_vl = []
             y_vl = []
             h_te = []
@@ -176,10 +174,10 @@ def run(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, default="ogbg-molhiv")
+    parser.add_argument("--data", type=str, default="ogbg-molpcba")
     parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--depth", type=int, default=2)
-    parser.add_argument("--num_samples", type=int, default=8)
+    parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-3)

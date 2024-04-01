@@ -1,3 +1,4 @@
+from math import degrees
 import numpy as np
 import torch
 import dgl
@@ -55,6 +56,7 @@ def run(args):
         dropout=args.dropout,
         num_layers=1,
         self_supervise=False,
+        degrees=False,
         activation=getattr(torch.nn, args.activation)(),
         binary=False,
     )
@@ -99,11 +101,11 @@ def run(args):
                 y = y.to("cuda")
             y = y.unsqueeze(-1).float()
             optimizer.zero_grad()
-            h, loss = model(
+            h, _ = model(
                 g, g.ndata["feat"].float(), 
                 # e=g.edata["feat"],
             )
-            loss = loss + torch.nn.functional.l1_loss(h, y)
+            loss = torch.nn.functional.l1_loss(h, y)
             loss.backward()
             optimizer.step()
 
@@ -145,13 +147,13 @@ def run(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, default="ESOL")
-    parser.add_argument("--hidden_features", type=int, default=64)
-    parser.add_argument("--depth", type=int, default=2)
+    parser.add_argument("--data", type=str, default="ZINC")
+    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--learning_rate", type=float, default=1e-2)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=20000)
     parser.add_argument("--dropout", type=float, default=0.2)
@@ -159,9 +161,9 @@ if __name__ == "__main__":
     parser.add_argument("--activation", type=str, default="SiLU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
-    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=1024)
     parser.add_argument("--seed", type=int, default=2666)
     parser.add_argument("--factor", type=float, default=0.5)
-    parser.add_argument("--patience", type=int, default=100)
+    parser.add_argument("--patience", type=int, default=5)
     args = parser.parse_args()
     run(args)

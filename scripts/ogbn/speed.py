@@ -69,10 +69,11 @@ def run(args):
     h0 = g.ndata["feat"]
     base_memory = torch.cuda.memory_allocated()/(1024**2)
     from tqdm import tqdm
-    for i in tqdm(range(0, g.ndata["train_mask"].sum(), args.batch_size)):
-        h, loss = model(g, h0, subsample=subsample)
-        current_memory = torch.cuda.memory_allocated()/(1024**2)
-        print(f"Memory: {current_memory-base_memory:.2f} MB")
+    for _ in range(10):
+        for i in tqdm(range(0, g.ndata["train_mask"].sum(), args.batch_size)):
+            h, loss = model(g, h0, subsample=subsample)
+            current_memory = torch.cuda.memory_allocated()/(1024**2)
+            print(f"Memory: {current_memory-base_memory:.2f} MB")
             
 
 if __name__ == "__main__":
@@ -82,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_features', type=int, default=64)
     parser.add_argument('--depth', type=int, default=1)
     parser.add_argument('--num_samples', type=int, default=1)
-    parser.add_argument('--length', type=int, default=4)
+    parser.add_argument('--length', type=int, default=2)
     parser.add_argument('--consistency_temperature', type=float, default=1.0)
     parser.add_argument('--self_supervise_weight', type=float, default=1e-3)
     parser.add_argument('--consistency_weight', type=float, default=1e-3)

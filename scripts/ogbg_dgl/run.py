@@ -20,7 +20,7 @@ def get_graphs(data, batch_size):
         node_featurizer=CanonicalAtomFeaturizer(atom_data_field='feat'),
         edge_featurizer=CanonicalBondFeaturizer(bond_data_field='e'),
     )
-    dataset = locals()[args.data](
+    dataset = locals()[data](
         featurizer, 
         load=True,
         cache_file_path=os.path.join(os.path.dirname(__file__), f"{data.lower()}_dglgraph.bin"),
@@ -29,9 +29,11 @@ def get_graphs(data, batch_size):
     evaluator = Evaluator(name=f"ogbg-mol{data.lower()}")
     split_idx = DglGraphPropPredDataset(name=f"ogbg-mol{data.lower()}").get_idx_split()
     pos_weight = dataset.task_pos_weights(split_idx["train"])[0]
+    print(pos_weight)
     data_train = [(dataset[idx][1], dataset[idx][2]) for idx in split_idx["train"]]
     data_valid = [(dataset[idx][1], dataset[idx][2]) for idx in split_idx["valid"]]
     data_test = [(dataset[idx][1], dataset[idx][2]) for idx in split_idx["test"]]
+    print(len(data_test))
 
     batch_size = batch_size if batch_size > 0 else len(data_train)
     data_train = GraphDataLoader(
@@ -58,7 +60,6 @@ def run(args):
 
     y = torch.cat([y for _, y in data_train])
     g, y = next(iter(data_train))
-    print(g)
     h = g.ndata["feat"]
 
     from rum.models import RUMGraphRegressionModel
@@ -75,7 +76,7 @@ def run(args):
         activation=getattr(torch.nn, args.activation)(),
         binary=True,
         degrees=False,
-        edge_features=g.edata["e"].shape[-1],
+        # edge_features=g.edata["e"].shape[-1],
     )
     print(model)
 
@@ -91,12 +92,12 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 
-        mode="max",
-        factor=args.factor,
-        patience=args.patience,
-    )
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, 
+    #     mode="max",
+    #     factor=args.factor,
+    #     patience=args.patience,
+    # )
 
     acc_vl_max, acc_te_max = 0.0, 0.0
         
@@ -108,7 +109,7 @@ def run(args):
                 y = y.to("cuda")
             optimizer.zero_grad()
             h = g.ndata["feat"]
-            h, loss = model(g, h, e=g.edata["e"])
+            h, loss = model(g, h)
             if y.isnan().any():
                 h = h[~y.isnan()]
                 y = y[~y.isnan()]
@@ -127,7 +128,7 @@ def run(args):
                     g = g.to("cuda")
                     y = y.to("cuda")
                 h = g.ndata["feat"]
-                h, _ = model(g, h, e=g.edata["e"])
+                h, _ = model(g, h)
                 h_vl.append(h.detach())
                 y_vl.append(y)
 
@@ -136,7 +137,7 @@ def run(args):
                     g = g.to("cuda")
                     y = y.to("cuda")
                 h = g.ndata["feat"]
-                h, _ = model(g, h, e=g.edata["e"])
+                h, _ = model(g, h)
                 h_te.append(h.detach())
                 y_te.append(y)
 
@@ -157,7 +158,7 @@ def run(args):
             acc_vl = evaluator.eval({"y_true": y_vl.cpu(), "y_pred": h_vl.cpu()})[metric]
             acc_te = evaluator.eval({"y_true": y_te.cpu(), "y_pred": h_te.cpu()})[metric]
 
-            scheduler.step(acc_vl)
+            # scheduler.step(acc_vl)
             if __name__ == "__main__":
                 print(acc_vl, acc_te, flush=True)
             else:
@@ -174,14 +175,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="HIV")
     parser.add_argument("--hidden_features", type=int, default=32)
-    parser.add_argument("--depth", type=int, default=2)
+    parser.add_argument("--depth", type=int, default=4)
     parser.add_argument("--num_samples", type=int, default=4)
-    parser.add_argument("--length", type=int, default=12)
+    parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=20000)
-    parser.add_argument("--self_supervise_weight", type=float, default=1e-3)
     parser.add_argument("--dropout", type=float, default=0.2)
     parser.add_argument("--num_layers", type=int, default=1)
     parser.add_argument("--activation", type=str, default="SiLU")
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--seed", type=int, default=2666)
-    parser.add_argument("--factor", type=float, default=0.5)
-    parser.add_argument("--patience", type=int, default=100)
+    # parser.add_argument("--factor", type=float, default=0.5)
+    # parser.add_argument("--patience", type=int, default=100)
     args = parser.parse_args()
     run(args)

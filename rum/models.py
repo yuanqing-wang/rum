@@ -59,11 +59,12 @@ class RUMGraphRegressionModel(RUMModel):
         self.fc_out = torch.nn.Sequential(
             self.activation,
             torch.nn.Linear(self.hidden_features, self.hidden_features),
-            # torch.nn.BatchNorm1d(self.hidden_features),
+            torch.nn.BatchNorm1d(self.hidden_features),
             self.activation,
             torch.nn.Dropout(kwargs["dropout"]),
             torch.nn.Linear(self.hidden_features, self.out_features),
         )
+
 
     def forward(self, g, h, e=None, subsample=None):
         g = g.local_var()
@@ -72,13 +73,15 @@ class RUMGraphRegressionModel(RUMModel):
         loss = 0.0
         for idx, layer in enumerate(self.layers):
             if idx > 0:
-                h = torch.nn.functional.tanh(h)
+                # h = torch.nn.functional.tanh(h)
+                h = torch.nn.SiLU()(h)
                 h = h.mean(0)
             h, _loss = layer(g, h, h0, e=e, subsample=subsample)
             loss = loss + self.self_supervise_weight * _loss
         # h = self.activation(h)
         h = h.mean(0)
         g.ndata["h"] = h
-        h = dgl.sum_nodes(g, "h")
+        # h = dgl.sum_nodes(g, "h")
+        h = dgl.mean_nodes(g, "h")
         h = self.fc_out(h)
         return h, loss
