@@ -5,7 +5,7 @@ from run import run
 import ray
 from ray import tune, air, train
 from ray.tune.schedulers import ASHAScheduler
-from ray.tune.search.ax import AxSearch
+from ray.tune.search.optuna import OptunaSearch
 from ray.tune.search import Repeater
 import torch
 num_gpus = torch.cuda.device_count()
@@ -51,7 +51,7 @@ def experiment(args):
 
     tune_config = tune.TuneConfig(
         scheduler=scheduler,
-        search_alg=AxSearch(),
+        search_alg=OptunaSearch(),
         num_samples=100,
         mode='max',
         metric='acc_vl',
