@@ -17,40 +17,13 @@ def get_graph(data):
         AmazonCoBuyPhotoDataset,
         CornellDataset,
         TexasDataset,
+        WisconsinDataset,
         FlickrDataset,
     )
 
     g = locals()[data](verbose=False)[0]
     g = dgl.remove_self_loop(g)
-    g = dgl.to_bidirected(g, copy_ndata=True)
-
-    if "train_mask" not in g.ndata:
-        g.ndata["train_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
-        g.ndata["val_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
-        g.ndata["test_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
-
-        train_idxs = torch.tensor([], dtype=torch.int32)
-        val_idxs = torch.tensor([], dtype=torch.int32)
-        test_idxs = torch.tensor([], dtype=torch.int32)
-
-        n_classes = g.ndata["label"].max() + 1
-        for idx_class in range(n_classes):
-            idxs = torch.where(g.ndata["label"] == idx_class)[0]
-            # print(idxs)
-            assert len(idxs) > 50
-            idxs = idxs[torch.randperm(len(idxs))]
-            _train_idxs = idxs[:20]
-            _val_idxs = idxs[20:50]
-            _test_idxs = idxs[50:]
-            train_idxs = torch.cat([train_idxs, _train_idxs])
-            val_idxs = torch.cat([val_idxs, _val_idxs])
-            test_idxs = torch.cat([test_idxs, _test_idxs])
-
-        g.ndata["train_mask"][train_idxs] = True
-        g.ndata["val_mask"][val_idxs] = True
-        g.ndata["test_mask"][test_idxs] = True
     return g
-
 def run(args):
     g = get_graph(args.data)
 
@@ -202,6 +175,6 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)
-    parser.add_argument("--directed", type=int, default=0)
+    parser.add_argument("--directed", type=int, default=1)
     args = parser.parse_args()
     run(args)

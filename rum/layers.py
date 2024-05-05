@@ -29,7 +29,7 @@ class RUMLayer(torch.nn.Module):
         self.rnn = rnn(in_features + 2 * out_features + int(degrees), out_features, **kwargs)
         self.rnn_walk = rnn(2, out_features, bidirectional=True, **kwargs)
         if edge_features > 0:
-            self.fc_edge = torch.nn.Linear(edge_features, in_features + 2 * out_features, bias=False)
+            self.fc_edge = torch.nn.Linear(edge_features, int(degrees) + in_features + 2 * out_features, bias=False)
         self.in_features = in_features
         self.out_features = out_features
         self.random_walk = random_walk

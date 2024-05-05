@@ -21,6 +21,7 @@ def get_graph(data):
 
     g = locals()[data](verbose=False)[0]
     g = dgl.remove_self_loop(g)
+    g = dgl.to_bidirected(g, copy_ndata=True)
 
     if "train_mask" not in g.ndata:
         g.ndata["train_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
@@ -173,12 +174,12 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
     parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
+    parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=10000)
     # parser.add_argument("--factor", type=float, default=0.5)
