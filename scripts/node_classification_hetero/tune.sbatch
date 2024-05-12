@@ -10,7 +10,7 @@
 
 # python tune.py --data CoauthorCSDataset 
 # python tune.py --data CoauthorPhysicsDataset
-python tune.py --data AmazonCoBuyComputerDataset
+# python tune.py --data AmazonCoBuyComputerDataset
 # python tune.py --data AmazonCoBuyPhotoDataset
 
 # python tune.py --data CoraGraphDataset
@@ -18,3 +18,8 @@ python tune.py --data AmazonCoBuyComputerDataset
 # python tune.py --data PubmedGraphDataset
 
 # python tune.py --data CornellDataset --split_index $IDX --directed 1
+# python tune.py --data WisconsinDataset --split_index $IDX --directed 1
+# python tune.py --data TexasDataset --split_index $IDX --directed 1
+# python tune.py --data ActorDataset --split_index $IDX --directed 1
+# python tune.py --data SquirrelDataset --split_index $IDX --directed 1
+python tune.py --data ChameleonDataset --split_index $IDX --directed 1

@@ -19,6 +19,9 @@ def get_graph(data):
         TexasDataset,
         WisconsinDataset,
         FlickrDataset,
+        ActorDataset,
+        SquirrelDataset,
+        ChameleonDataset,
     )
 
     g = locals()[data](verbose=False)[0]

@@ -62,6 +62,7 @@ def check(args):
         df["acc_te"] = [result["acc_te"] for result in results]
         df.to_csv(args.report)
     
+    return results[0]["acc_te"]
 
 if __name__ == "__main__":
     import argparse
