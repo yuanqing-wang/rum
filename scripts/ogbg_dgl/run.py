@@ -92,12 +92,12 @@ def run(args):
         weight_decay=args.weight_decay,
     )
 
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, 
-    #     mode="max",
-    #     factor=args.factor,
-    #     patience=args.patience,
-    # )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, 
+        mode="max",
+        factor=args.factor,
+        patience=args.patience,
+    )
 
     acc_vl_max, acc_te_max = 0.0, 0.0
         
@@ -158,7 +158,7 @@ def run(args):
             acc_vl = evaluator.eval({"y_true": y_vl.cpu(), "y_pred": h_vl.cpu()})[metric]
             acc_te = evaluator.eval({"y_true": y_te.cpu(), "y_pred": h_te.cpu()})[metric]
 
-            # scheduler.step(acc_vl)
+            scheduler.step(acc_vl)
             if __name__ == "__main__":
                 print(acc_vl, acc_te, flush=True)
             else:
