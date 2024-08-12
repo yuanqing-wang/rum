@@ -1,3 +1,4 @@
+from re import sub
 from typing import Callable
 import torch
 import dgl
@@ -32,7 +33,7 @@ class RUMModel(torch.nn.Module):
         self.self_supervise_weight = self_supervise_weight
         self.consistency_weight = consistency_weight
 
-    def forward(self, g, h, e=None, consistency_weight=None):
+    def forward(self, g, h, e=None, consistency_weight=None, subsample=None):
         g = g.local_var()
         if consistency_weight is None:
             consistency_weight = self.consistency_weight
@@ -42,7 +43,7 @@ class RUMModel(torch.nn.Module):
         for idx, layer in enumerate(self.layers):
             if idx > 0:
                 h = h.mean(0)
-            h, _loss = layer(g, h, h0, e=e)
+            h, _loss = layer(g, h, h0, e=e, subsample=subsample)
             loss = loss + self.self_supervise_weight * _loss
         h = self.fc_out(h).softmax(-1)
         if self.training:
@@ -56,27 +57,31 @@ class RUMGraphRegressionModel(RUMModel):
         super().__init__(*args, **kwargs)
 
         self.fc_out = torch.nn.Sequential(
+            # torch.nn.BatchNorm1d(self.hidden_features),
             self.activation,
             torch.nn.Linear(self.hidden_features, self.hidden_features),
-            # torch.nn.BatchNorm1d(self.hidden_features),
             self.activation,
             torch.nn.Dropout(kwargs["dropout"]),
             torch.nn.Linear(self.hidden_features, self.out_features),
         )
 
-    def forward(self, g, h, e=None):
+
+    def forward(self, g, h, e=None, subsample=None):
         g = g.local_var()
         h0 = h
         h = self.fc_in(h)
         loss = 0.0
         for idx, layer in enumerate(self.layers):
             if idx > 0:
+                # h = torch.nn.functional.tanh(h)
+                h = torch.nn.SiLU()(h)
                 h = h.mean(0)
-            h, _loss = layer(g, h, h0, e=e)
+            h, _loss = layer(g, h, h0, e=e, subsample=subsample)
             loss = loss + self.self_supervise_weight * _loss
         # h = self.activation(h)
         h = h.mean(0)
         g.ndata["h"] = h
-        h = dgl.sum_nodes(g, "h")
+        # h = dgl.sum_nodes(g, "h")
+        h = dgl.mean_nodes(g, "h")
         h = self.fc_out(h)
         return h, loss

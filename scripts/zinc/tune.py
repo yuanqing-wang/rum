@@ -4,7 +4,7 @@ from datetime import datetime
 from run import run
 import ray
 from ray import tune, air, train
-from ray.tune.trainable import session
+from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.ax import AxSearch
 from ray.tune.search import Repeater
 import torch
@@ -17,8 +17,7 @@ def objective(config):
     checkpoint = os.path.join(os.getcwd(), "model.pt")
     config["checkpoint"] = checkpoint
     args = SimpleNamespace(**config)
-    rmse_vl, rmse_te = run(args)
-    ray.train.report(dict(rmse_vl=rmse_vl, rmse_te=rmse_te))
+    run(args)
 
 def experiment(args):
     name = datetime.now().strftime("%m%d%Y%H%M%S") + "_" + args.data
@@ -26,40 +25,46 @@ def experiment(args):
         "data": args.data,
         "hidden_features": tune.randint(32, 64),
         "learning_rate": tune.loguniform(1e-5, 1e-1),
-        "weight_decay": tune.loguniform(1e-8, 1e-2),
-        "length": tune.randint(3, 16),
+        "weight_decay": tune.loguniform(1e-12, 1e-2),
+        "length": tune.randint(3, 8),
         "consistency_temperature": tune.uniform(0.0, 1.0),
         "optimizer": "Adam",
         "depth": 1,
         "num_layers": 1, # tune.randint(1, 3),
-        "num_samples": 8,
+        "num_samples": 4,
         "n_epochs": 500,  
         "patience": 50,
         "self_supervise_weight": tune.loguniform(1e-4, 1.0),
         "consistency_weight": tune.loguniform(1e-4, 1.0),
         "dropout": tune.uniform(0.0, 0.5),
-        "batch_size": tune.randint(32, 128),
+        "batch_size": 32,
         "checkpoint": 1,
         "activation": "SiLU", # tune.choice(["ReLU", "ELU", "SiLU"]),
-        "split_index": args.split_index,
+        "factor": tune.uniform(0.5, 0.9),
     }
 
-    tune_config = tune.TuneConfig(
-        metric="rmse_vl",
-        mode="min",
-        search_alg=Repeater(AxSearch(), 3),
-        num_samples=3000,
+    scheduler = ASHAScheduler(
+        time_attr='training_iteration',
+        max_t=500,
+        grace_period=50,
+        reduction_factor=3,
+        brackets=1,
     )
 
-    if args.split_index < 0:
-        storage_path = os.path.join(os.getcwd(), args.data)
-    else:
-        storage_path = os.path.join(os.getcwd(), args.data, str(args.split_index))
+    tune_config = tune.TuneConfig(
+        scheduler=scheduler,
+        search_alg=AxSearch(),
+        num_samples=100,
+        mode='min',
+        metric='mae_vl',
+    )
+
+    storage_path = os.path.join(os.getcwd(), args.data)
     
     run_config = air.RunConfig(
         name=name,
         storage_path=storage_path,
-        verbose=0,
+        verbose=1,
     )
 
     tuner = tune.Tuner(
@@ -69,7 +74,7 @@ def experiment(args):
         run_config=run_config,
     )
 
-    results = tuner.fit()
+    tuner.fit()
 
 if __name__ == "__main__":
     import argparse

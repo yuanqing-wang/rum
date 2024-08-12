@@ -16,10 +16,12 @@ def get_graph(data):
         AmazonCoBuyPhotoDataset,
         CornellDataset,
         TexasDataset,
+        FlickrDataset,
     )
 
     g = locals()[data](verbose=False)[0]
     g = dgl.remove_self_loop(g)
+    g = dgl.to_bidirected(g, copy_ndata=True)
 
     if "train_mask" not in g.ndata:
         g.ndata["train_mask"] = torch.zeros(g.number_of_nodes(), dtype=torch.bool)
@@ -78,7 +80,7 @@ def run(args):
         length=args.length,
         temperature=args.consistency_temperature,
         dropout=args.dropout,
-        num_layers=1,
+        num_layers=args.num_layers,
         self_supervise_weight=args.self_supervise_weight,
         consistency_weight=args.consistency_weight,
         activation=getattr(torch.nn, args.activation)(),
@@ -172,23 +174,23 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="CoraGraphDataset")
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=64)
     parser.add_argument("--depth", type=int, default=1)
-    parser.add_argument("--num_samples", type=int, default=8)
+    parser.add_argument("--num_samples", type=int, default=4)
     parser.add_argument("--length", type=int, default=8)
     parser.add_argument("--optimizer", type=str, default="Adam")
     parser.add_argument("--learning_rate", type=float, default=1e-2)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
+    parser.add_argument("--weight_decay", type=float, default=1e-10)
     parser.add_argument("--n_epochs", type=int, default=10000)
     # parser.add_argument("--factor", type=float, default=0.5)
     # parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--self_supervise_weight", type=float, default=10.0)
+    parser.add_argument("--self_supervise_weight", type=float, default=1.0)
     parser.add_argument("--consistency_weight", type=float, default=1)
     parser.add_argument("--consistency_temperature", type=float, default=0.5)
-    parser.add_argument("--dropout", type=float, default=0.5)
+    parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_layers", type=int, default=1)
-    parser.add_argument("--activation", type=str, default="ELU")
+    parser.add_argument("--activation", type=str, default="SiLU")
     parser.add_argument("--checkpoint", type=str, default="")
     parser.add_argument("--split_index", type=int, default=-1)
     parser.add_argument("--patience", type=int, default=500)

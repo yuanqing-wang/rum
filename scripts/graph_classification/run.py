@@ -81,7 +81,6 @@ def run(args):
                 y = y.to("cuda")
             optimizer.zero_grad()
             h, loss = model(g, g.ndata["feat"])
-            h = h.mean(0)
             loss = loss + torch.nn.BCEWithLogitsLoss(
                 pos_weight=pos_weight,
             )(h, y)
