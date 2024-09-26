@@ -1,2 +1,2 @@
 # rum
-Random walk unit with memory 
+Random walk with unifying memory.
