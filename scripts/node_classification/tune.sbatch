@@ -10,11 +10,11 @@
 
 # python tune.py --data CoauthorCSDataset 
 # python tune.py --data CoauthorPhysicsDataset
-python tune.py --data AmazonCoBuyComputerDataset
+# python tune.py --data AmazonCoBuyComputerDataset
 # python tune.py --data AmazonCoBuyPhotoDataset
 
 # python tune.py --data CoraGraphDataset
 # python tune.py --data CiteseerGraphDataset
 # python tune.py --data PubmedGraphDataset
 
-# python tune.py --data CornellDataset --split_index $IDX --directed 1
+python tune.py --data Texas --split_index $IDX --directed 1

@@ -7,6 +7,6 @@
 #SBATCH --ntasks-per-node=1
 
 
-python tune.py --data ESOL
+python tune.py --data HIV
 # python tune.py --data FreeSolv
 # python tune.py --data Lipophilicity
